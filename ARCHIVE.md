@@ -400,7 +400,26 @@ await invites.SendInviteAsync(recipientPuid);
 
 ---
 
-## Ownership Swapping Research
+## Physics Networking Approach
+
+### Our Solution: Spring-Based PhysicsNetworkTransform
+
+After evaluating ownership swapping approaches (including FishNet's `PredictedOwner`), we chose a **spring-based synchronization model** using `PhysicsNetworkTransform`. This approach is significantly better than ownership swapping for physics objects.
+
+**Why Spring-Based Wins:**
+- No ownership transfer latency or conflicts
+- Smooth interpolation without NetworkTransform enable/disable hacks
+- Works naturally with multiple players interacting with the same object
+- No "faster wins" edge cases or velocity tracking complexity
+- Simpler code, fewer edge cases, better feel
+
+The `PlayerBall` demo uses `PhysicsNetworkTransform` - no input syncing, no ownership swapping, just clean spring-based physics.
+
+---
+
+## Alternative Research: Ownership Swapping (Reference Only)
+
+The following is retained as reference material for those interested in ownership-based approaches. **We chose not to use this approach** - spring-based sync is superior for our use case.
 
 ### FishNet PredictedOwner Component
 
@@ -419,9 +438,10 @@ Key concepts from Unity's Netcode for GameObjects XR sample (`NetworkPhysicsInte
 - Disable NetworkTransform during ownership request
 - Track average velocity over 3 frames
 
-### Implementation TODO
+### PredictedOwner Sample Ideas
 
-1. Replace `NetworkPhysicsObject` with `PredictedOwner`-based solution
-2. Add velocity tracking over 3 frames
-3. Velocity-based priority (faster wins)
-4. RTT-aware timeout for NetworkTransform re-enable
+If implementing ownership swapping for other use cases (e.g., VR hand interactions):
+1. Use `PredictedOwner` component with velocity-based priority
+2. Add velocity tracking over 3 frames for stability
+3. RTT-aware timeout for NetworkTransform re-enable
+4. Consider hybrid: spring-based for physics, ownership for held objects
