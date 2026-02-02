@@ -14,7 +14,7 @@ This transport was built by studying these excellent open-source projects. We le
 |---------|--------|-----------------|------|
 | **EOSTransport** | FakeByte | Raw SDK init, packet fragmentation, Editor DLL loading, Android `.so` loading | [GitHub](https://github.com/FakeByte/EpicOnlineTransport) |
 | **FishyEOS** | ETdoFresh | FishNet transport base, Server/Client peer pattern, ClientHost handling | [GitHub](https://github.com/ETdoFresh/FishyEOS) |
-| **PurrNet EOS** | CytoidCommunity | Clean 4-file architecture, minimal transport design | [GitHub](https://github.com/CytoidCommunity/PurrNet) |
+| **PurrNet EOS** | qwolf (Quentin Leon) | Clean 4-file architecture, minimal transport design | [GitHub](https://github.com/quentinleon/PurrNetEOSTransport) |
 
 ### Advanced Features
 

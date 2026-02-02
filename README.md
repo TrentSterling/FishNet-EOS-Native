@@ -197,7 +197,7 @@ This project was built by studying these excellent open-source projects:
 
 - **[FishyEOS](https://github.com/ETdoFresh/FishyEOS)** by ETdoFresh
 - **[EOSTransport](https://github.com/FakeByte/EpicOnlineTransport)** by FakeByte
-- **[PurrNet EOS Transport](https://github.com/CytoidCommunity/PurrNet)**
+- **[PurrNet EOS Transport](https://github.com/quentinleon/PurrNetEOSTransport)** by qwolf
 - **[EOS C# SDK](https://dev.epicgames.com/docs/epic-online-services)** by Epic Games
 
 ### Special Thanks
