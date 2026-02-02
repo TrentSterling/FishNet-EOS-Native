@@ -76,9 +76,9 @@ Thumbs.db
 # PROJECT SPECIFIC
 # ============================================
 
-# SAMPLES folder - reference code only, not for distribution
-# These are inspiration/learning resources from other projects
-SAMPLES/
+# SAMPLES folder at root - reference code only, not for distribution
+# (Use leading slash to not match nested Samples folders)
+/SAMPLES/
 
 # EOS credentials (if any local config)
 **/EOSConfig.asset
