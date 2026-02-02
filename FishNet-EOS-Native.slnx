@@ -1,0 +1,11 @@
+﻿<Solution>
+  <Project Path="Epic.OnlineServices.csproj" />
+  <Project Path="FishNet.Codegen.Cecil.csproj" />
+  <Project Path="FishNet.Runtime.csproj" />
+  <Project Path="FishNet.Transport.EOSNative.csproj" />
+  <Project Path="GameKit.Dependencies.csproj" />
+  <Project Path="Unity.FishNet.Codegen.csproj" />
+  <Project Path="FishNet.Demos.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="FishNet.Transport.EOSNative.Editor.csproj" />
+</Solution>

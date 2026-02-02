@@ -1,0 +1,706 @@
+# CLAUDE.md
+
+Guidance for Claude Code working with this repository. Historical/reference docs moved to `ARCHIVE.md`.
+
+## Project Overview
+
+**FishNet-EOS-Native** - Standalone Transport for FishNet using Epic Online Services (EOS) directly via raw C# SDK. No PlayEveryWare dependency.
+
+**Unity Version:** 6000.0.65f1 (Unity 6)
+**Version Control:** Git
+
+## The Golden Rule
+
+**DO NOT use the `PlayEveryWare` namespace.** Use `Epic.OnlineServices` directly. See [ARCHIVE.md](ARCHIVE.md) for reference project links.
+
+## Architecture
+
+### The Stack
+
+```
+EOS Lobby (persistent layer)
+├── Voice/RTC ──────── Survives host migration
+├── Member presence ── Who's in session
+├── Lobby attributes ─ Settings, chat messages
+└── Host PUID ──────── P2P connection target
+    │
+    └── FishNet P2P Connection (transient layer)
+        ├── Game state sync
+        ├── NetworkObjects
+        └── RPCs
+```
+
+### Key Constants
+
+| Constant | Value |
+|----------|-------|
+| P2P Max Packet | 1170 bytes |
+| Packet Header | 7 bytes |
+| Client Host ID | 32767 (short.MaxValue) |
+| Connection Timeout | 25 seconds |
+| Lobby Max Members | 64 |
+
+### EOS Service Limits
+
+| Limit | Value |
+|-------|-------|
+| Max players/lobby | 64 |
+| Max lobbies/user | 16 |
+| Create/Join rate | 30/min |
+| Attribute updates | 100/min |
+
+## File Structure
+
+```
+Assets/FishNet.Transport.EOSNative/
+├── CORE (10 files)
+│   ├── EOSManager.cs              # SDK init, Tick, device login
+│   ├── EOSConfig.cs               # ScriptableObject credentials
+│   ├── EOSNativeTransport.cs      # Main transport + lobby API
+│   ├── EOSServer.cs / EOSClient.cs / EOSClientHost.cs
+│   ├── EOSPlayerRegistry.cs       # Player cache + local friends
+│   ├── PacketFragmenter.cs        # >1170 byte packets
+│   └── Connection.cs / LocalPacket.cs
+│
+├── Debug/ (2 files)
+│   ├── EOSDebugSettings.cs        # ScriptableObject + DebugCategory enum
+│   └── EOSDebugLogger.cs          # Centralized logging utility
+│
+├── UI (5 files)
+│   ├── EOSNativeUI.cs             # F1 - main debug UI
+│   ├── DebugUI/EOSVoiceDebugPanel.cs      # F3
+│   ├── DebugUI/EOSNetworkDebugPanel.cs    # F4
+│   └── EOSNetworkPlayer.cs
+│
+├── Lobbies/ (3 files) - EOSLobbyManager, EOSLobbyChatManager, LobbyData
+├── Voice/ (3 files) - EOSVoiceManager, EOSVoicePlayer, FishNetVoicePlayer
+├── Migration/ (4 files) - HostMigratable, HostMigrationManager, HostMigrationPlayerSpawner, HostMigrationTester
+├── Social/ (10 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData
+├── Storage/ (2 files) - EOSPlayerDataStorage, EOSTitleStorage
+├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
+├── Replay/ (9 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings
+├── AntiCheat/ (1 file) - EOSAntiCheatManager
+├── EOSSpectatorMode.cs           # Spectator camera system
+├── Editor/ (4 files) - EOSNativeTransportEditor, EOSNativeMenu, EOSSetupWizard, EOSDebugSettingsWindow
+└── Demo/ (5 files) - PlayerBall, NetworkPhysicsObject, PlayerSpawner, etc.
+```
+
+## Quick Start
+
+### Setup
+
+1. Add `EOSNativeTransport` component to GameObject
+2. **Auto-created:** NetworkManager, EOSManager, EOSLobbyManager, EOSVoiceManager, HostMigrationManager
+3. Configure credentials via `Tools > FishNet EOS Native > Setup Wizard`
+4. Enter Play Mode → auto-initializes
+
+### API
+
+```csharp
+var transport = GetComponent<EOSNativeTransport>();
+
+// Host
+var (result, lobby) = await transport.HostLobbyAsync();
+var (result, lobby) = await transport.HostLobbyAsync("1234");
+var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+{
+    LobbyName = "My Room", GameMode = "deathmatch", MaxPlayers = 8
+});
+
+// Join
+var (result, lobby) = await transport.JoinLobbyAsync("1234");
+
+// Quick Match
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
+
+// Leave
+await transport.LeaveLobbyAsync();
+
+// State
+if (transport.IsInLobby) { }
+if (transport.IsLobbyOwner) { }
+```
+
+### Lobby Search
+
+```csharp
+var options = new LobbySearchOptions()
+    .WithGameMode("ranked")
+    .WithRegion("us-east")
+    .ExcludePassworded()
+    .WithMaxResults(20);
+
+var (result, lobbies) = await transport.SearchLobbiesAsync(options);
+```
+
+### Testing with ParrelSync
+
+1. Main Editor: Host lobby
+2. Clone: Join with same code
+3. Both show connected within seconds
+
+### Local Friends
+
+Local friends are players you've marked from the Recently Played list. They persist locally in PlayerPrefs and sync to EOS Cloud Storage (400MB per player) for cross-device support.
+
+```csharp
+var registry = EOSPlayerRegistry.Instance;
+
+// Check/toggle friend status
+if (registry.IsFriend(puid)) { }
+registry.AddFriend(puid);
+registry.RemoveFriend(puid);
+registry.ToggleFriend(puid);
+
+// Get all friends
+var friends = registry.GetFriends(); // List<(string puid, string name)>
+
+// Cloud sync (auto-syncs on add/remove, but can manually trigger)
+await registry.SyncFriendsToCloudAsync();    // Upload to cloud
+await registry.LoadFriendsFromCloudAsync();  // Download from cloud (merges)
+await registry.FullCloudSyncAsync();         // Two-way sync
+
+// Events
+registry.OnFriendChanged += (puid, isNowFriend) => { };
+
+// Block list
+registry.BlockPlayer(puid);
+registry.UnblockPlayer(puid);
+if (registry.IsBlocked(puid)) { }
+var blocked = registry.GetBlockedPlayers();
+
+// Friend notes
+registry.SetNote(puid, "Met in ranked match");
+string note = registry.GetNote(puid);
+```
+
+**UI Integration:**
+- Recently Played shows [★]/[☆] to toggle friend status + platform icon
+- LOCAL FRIENDS section shows friends with status, platform, [Invite] and [Remove] buttons
+- INVITES section has Quick Send buttons for friends
+- Cloud sync button (☁) syncs friends across devices
+
+### Match History
+
+Track games played with participants and outcomes.
+
+```csharp
+var history = EOSMatchHistory.Instance;
+
+// Start tracking when game begins
+history.StartMatch("deathmatch", "dust2");
+
+// Add participants as they join
+history.AddParticipant(puid, "PlayerName", team: 1);
+
+// Update scores during match
+history.UpdateLocalScore(score: 15, team: 1);
+history.UpdateParticipantScore(puid, score: 12);
+
+// End match
+history.EndMatch(MatchOutcome.Win, winnerPuid: localPuid);
+
+// Query history
+var recent = history.GetRecentMatches(10);
+var (wins, losses, draws, total) = history.GetLocalStats();
+```
+
+### Spectator Mode
+
+Watch games without participating.
+
+```csharp
+var spectator = EOSSpectatorMode.Instance;
+
+// Join as spectator (won't spawn player)
+await spectator.JoinAsSpectatorAsync("1234");
+
+// Or enter spectator mode after joining normally
+spectator.EnterSpectatorMode();
+
+// Controls (automatic):
+// - Click/Arrow keys: Cycle between players
+// - F: Toggle free camera mode
+// - WASD/QE: Move in free camera
+// - Right-click drag: Look around
+
+// API
+spectator.CycleTarget(1);  // Next player
+spectator.SetTarget(networkObject);
+string name = spectator.GetCurrentTargetName();
+spectator.ExitSpectatorMode();
+```
+
+### Platform Detection
+
+Players share their platform when joining lobbies.
+
+```csharp
+// Get current platform
+EOSPlatformType platform = EOSPlatformHelper.CurrentPlatform;
+string platformId = EOSPlatformHelper.PlatformId; // "WIN", "AND", "IOS", etc.
+
+// Get player's platform
+string playerPlatform = EOSPlayerRegistry.Instance.GetPlatform(puid);
+string icon = EOSPlayerRegistry.GetPlatformIcon(playerPlatform); // 🖥️, 📱, 👓
+string name = EOSPlayerRegistry.GetPlatformName(playerPlatform); // "Windows", "Android", "Quest"
+
+// Platform checks
+if (EOSPlatformHelper.IsMobile) { }
+if (EOSPlatformHelper.IsVR) { }
+if (EOSPlatformHelper.SupportsVoice) { }
+```
+
+### Toast Notifications
+
+Non-intrusive popup messages for events.
+
+```csharp
+// Show toasts
+EOSToastManager.Info("Player joined");
+EOSToastManager.Success("Connected", "Lobby code: 1234");
+EOSToastManager.Warning("High ping detected");
+EOSToastManager.Error("Connection lost");
+
+// Configure
+EOSToastManager.Instance.Position = ToastPosition.TopRight;
+EOSToastManager.Instance.DefaultDuration = 3f;
+EOSToastManager.ClearAll();
+```
+
+Auto-integration via `EOSToastIntegration` shows toasts for lobby events, invites, and friend changes.
+
+### Party System
+
+Persistent groups that follow the leader across games.
+
+```csharp
+var party = EOSPartyManager.Instance;
+
+// Create/Join
+await party.CreatePartyAsync("My Party", maxSize: 4);
+await party.JoinPartyAsync("ABC123");  // 6-char party code
+
+// Invite friends
+await party.InviteToPartyAsync(friendPuid);
+
+// Leadership
+await party.PromoteToLeaderAsync(memberPuid);
+await party.KickMemberAsync(memberPuid);
+
+// Game following (leader calls this when joining a game)
+await party.LeaderJoinGameAsync("1234");  // Members auto-follow
+
+// Members can manually follow
+await party.FollowLeaderAsync();
+
+// Ready check
+party.StartReadyCheck("1234");
+await party.RespondToReadyCheckAsync(true);
+
+// Chat
+await party.SendPartyChatAsync("Let's go!");
+
+// Leave/Dissolve
+await party.LeavePartyAsync();
+await party.DissolvePartyAsync();  // Leader only
+```
+
+**Configuration Options:**
+```csharp
+// Follow modes
+party.FollowMode = PartyFollowMode.Automatic;  // Auto-follow leader
+party.FollowMode = PartyFollowMode.Confirm;    // Prompt before follow
+party.FollowMode = PartyFollowMode.ReadyCheck; // Ready check first
+party.FollowMode = PartyFollowMode.Manual;     // Manual only
+
+// Full lobby behavior
+party.FullLobbyBehavior = PartyFullLobbyBehavior.BlockJoin;   // Can't join
+party.FullLobbyBehavior = PartyFullLobbyBehavior.WarnAndAsk;  // Ask leader
+party.FullLobbyBehavior = PartyFullLobbyBehavior.PartialJoin; // Join who fits
+party.FullLobbyBehavior = PartyFullLobbyBehavior.LeaderOnly;  // Leader solo
+
+// Persistence
+party.Persistence = PartyPersistence.SessionBased; // Dissolves on quit
+party.Persistence = PartyPersistence.Persistent;   // Lives forever
+party.Persistence = PartyPersistence.TimedExpiry;  // Expires when idle
+
+// Other settings
+party.AfkTimeout = 10f;
+party.SeparatePartyVoice = true;
+party.AutoPromoteOnLeaderLeave = true;
+party.AllowPublicJoin = false;
+party.FriendsOnly = true;
+```
+
+**Events:**
+```csharp
+party.OnMemberJoined += (member) => { };
+party.OnMemberLeft += (puid) => { };
+party.OnLeaderChanged += (oldPuid, newPuid) => { };
+party.OnLeaderJoinedGame += (gameCode) => { };
+party.OnFollowRequested += (request) => { };  // For Confirm mode
+party.OnReadyCheckStarted += (data) => { };
+party.OnReadyCheckCompleted += (allReady) => { };
+```
+
+### Chat History
+
+Chat messages persist to cloud and reload when rejoining the same lobby.
+
+```csharp
+var chat = EOSLobbyChatManager.Instance;
+
+// Messages auto-save when leaving lobby
+// Messages auto-load when joining lobby with same code
+
+// Manual control
+await chat.SaveChatHistoryAsync("1234");
+await chat.LoadChatHistoryAsync("1234");
+await chat.DeleteChatHistoryAsync("1234");
+```
+
+### Ranked Matchmaking
+
+Skill-based matchmaking with multiple rating algorithms and tier display.
+
+```csharp
+var ranked = EOSRankedMatchmaking.Instance;
+
+// Find a ranked match (searches by skill range, expands if not found)
+var (result, lobby) = await ranked.FindRankedMatchAsync("ranked");
+
+// Host a ranked lobby at your skill level
+var (result, lobby) = await ranked.HostRankedLobbyAsync("ranked");
+
+// Find or host (tries to join first, hosts if none found)
+var (result, lobby, didHost) = await ranked.FindOrHostRankedMatchAsync("ranked");
+
+// Record match results (updates rating)
+var ratingChange = await ranked.RecordMatchResultAsync(
+    MatchOutcome.Win,
+    opponentRating: 1450
+);
+
+// Rating info
+int rating = ranked.CurrentRating;           // e.g., 1350
+RankTier tier = ranked.CurrentTier;          // e.g., Gold
+RankDivision division = ranked.CurrentDivision; // e.g., II
+string display = ranked.GetCurrentRankDisplayName(); // "Gold II" or "1350"
+
+// Player stats
+var data = ranked.PlayerData;
+int wins = data.Wins;
+int losses = data.Losses;
+float winRate = data.WinRate;
+int peak = data.PeakRating;
+
+// Placement (first 10 games)
+bool placed = ranked.IsPlaced;
+```
+
+**Configuration (Inspector or code):**
+```csharp
+// Rating algorithms
+ranked.SetAlgorithm(RatingAlgorithm.ELO);      // Standard ELO with K-factor
+ranked.SetAlgorithm(RatingAlgorithm.Glicko2);  // Glicko-2 with uncertainty
+ranked.SetAlgorithm(RatingAlgorithm.SimpleMMR); // Fixed points + streak bonuses
+
+// Tier display modes
+ranked.SetTierDisplayMode(TierDisplayMode.SixTier);    // Bronze→Champion
+ranked.SetTierDisplayMode(TierDisplayMode.EightTier);  // Iron→Grandmaster
+ranked.SetTierDisplayMode(TierDisplayMode.NumbersOnly); // Just show rating
+```
+
+**Events:**
+```csharp
+ranked.OnRatingChanged += (change) => {
+    Debug.Log($"Rating: {change.OldRating} → {change.NewRating} ({change.Change:+0;-0})");
+};
+ranked.OnPromotion += (tier, division) => { };
+ranked.OnDemotion += (tier, division) => { };
+ranked.OnPlacementCompleted += (rating, tier, division) => { };
+ranked.OnMatchFound += (lobby) => { };
+```
+
+**Tier Thresholds (6-Tier):**
+| Tier | Rating |
+|------|--------|
+| Champion | 2200+ |
+| Diamond | 1900+ |
+| Platinum | 1600+ |
+| Gold | 1300+ |
+| Silver | 1000+ |
+| Bronze | 0+ |
+
+### Replay System
+
+Record game sessions and play them back with timeline controls. Auto-integrates with EOSMatchHistory and EOSSpectatorMode.
+
+```csharp
+var recorder = EOSReplayRecorder.Instance;
+var player = EOSReplayPlayer.Instance;
+var storage = EOSReplayStorage.Instance;
+var viewer = EOSReplayViewer.Instance;
+
+// Recording (auto-starts with EOSMatchHistory.StartMatch if AutoRecord enabled)
+recorder.StartRecording(matchId);
+recorder.RecordEvent("goal_scored", "{\"team\":1}");  // Custom events
+var replay = await recorder.StopAndSaveAsync();
+
+// Manual control
+recorder.AutoRecord = true;   // Toggle auto-recording with matches
+recorder.FrameRate = 20f;     // Frames per second (default: 20)
+
+// Storage
+var replays = storage.GetLocalReplays();              // List<ReplayHeader>
+var replay = await storage.LoadLocalAsync(replayId);
+storage.DeleteReplay(replayId);
+
+// Cloud storage (optional)
+await storage.UploadToCloudAsync(replay);
+var cloudReplays = await storage.GetCloudReplaysAsync();
+var replay = await storage.DownloadFromCloudAsync(replayId);
+
+// Playback via EOSReplayViewer (recommended - includes spectator camera)
+viewer.StartViewing(replay);
+viewer.TogglePlayPause();
+viewer.Seek(30f);              // Seek to 30 seconds
+viewer.SeekPercent(0.5f);      // Seek to 50%
+viewer.Skip(10f);              // Skip forward 10 seconds
+viewer.SetSpeed(2f);           // 2x speed
+viewer.CycleSpeed();           // Cycle: 0.5x → 1x → 2x → 4x
+viewer.CycleTarget(1);         // Next player
+viewer.StopViewing();
+
+// Or use EOSReplayPlayer directly (no camera)
+player.LoadReplay(replay);
+player.Play();
+player.Pause();
+player.Stop();
+player.Seek(time);
+player.PlaybackSpeed = 2f;
+var objects = player.GetPlayerObjects();  // For custom camera targeting
+```
+
+**Recording Settings:**
+```csharp
+// Mark specific objects for recording
+gameObject.AddComponent<ReplayRecordable>();
+
+// Customize recording behavior
+var recordable = GetComponent<ReplayRecordable>();
+recordable.RecordEnabled = true;           // Include in replays
+recordable.PositionThreshold = 0.001f;     // Min position change
+recordable.RotationThreshold = 0.1f;       // Min rotation change (degrees)
+```
+
+**Events:**
+```csharp
+recorder.OnRecordingStarted += (matchId) => { };
+recorder.OnRecordingStopped += (replay) => { };
+recorder.OnFrameRecorded += (frameCount, timestamp) => { };
+recorder.OnQualityWarning += (warning) => { };      // HighPing, VeryHighPing, LowFrameRate
+recorder.OnDurationWarning += (current, max) => { }; // Approaching time limit
+recorder.OnAutoStopped += (reason) => { };          // Hit max duration
+
+player.OnTimeChanged += (time) => { };
+player.OnStateChanged += (state) => { };  // Playing, Paused, Stopped
+player.OnReplayEnded += () => { };
+
+viewer.OnViewingStarted += (header) => { };
+viewer.OnViewingStopped += () => { };
+```
+
+**Favorites & Export:**
+```csharp
+// Mark replays as favorites (protected from auto-cleanup)
+storage.ToggleFavorite(replayId);
+storage.AddFavorite(replayId);
+storage.RemoveFavorite(replayId);
+if (storage.IsFavorite(replayId)) { }
+
+// Export for manual sharing (copies to Documents/Replays)
+string path = await storage.ExportReplayAsync(replayId);
+storage.OpenExportFolder();  // Opens in file browser
+
+// Import shared replay files
+bool success = await storage.ImportReplayAsync(filePath);
+```
+
+**Recording Limits (configurable in EOSReplaySettings):**
+```csharp
+// Monitor during recording
+float duration = recorder.Duration;
+float maxDuration = recorder.MaxDuration;      // Default: 30 minutes
+float estimatedKB = recorder.EstimatedSizeKB;
+bool warning = recorder.IsApproachingLimit;    // Within 5 min of limit
+```
+
+**Keyboard Shortcuts (during playback):**
+| Key | Action |
+|-----|--------|
+| Space | Play/Pause |
+| ← / → | Skip -10s / +10s |
+| Home / End | Jump to start / end |
+| 1-4 | Set speed (0.5x, 1x, 2x, 4x) |
+| Tab | Cycle target player |
+| Escape | Stop viewing |
+
+**Storage Limits:**
+| Storage | Limit |
+|---------|-------|
+| Local replays | 50 (oldest auto-deleted, favorites exempt) |
+| Cloud replays | 10 (oldest auto-deleted) |
+| Max duration | 30 minutes (auto-stops) |
+| File size | ~500KB for 10-min match |
+
+**Data Compression:**
+- Position: Half-precision floats (6 bytes vs 12)
+- Rotation: Smallest-three quaternion (4 bytes vs 16)
+- Frames: Delta compression (only changed objects)
+- File: GZip compression (~60% reduction)
+
+### Anti-Cheat (EOS EAC)
+
+Easy Anti-Cheat integration for client integrity validation.
+
+```csharp
+var antiCheat = EOSAntiCheatManager.Instance;
+
+// Session lifecycle (auto-managed when AutoStartSession is true)
+antiCheat.BeginSession();   // Start protection
+antiCheat.EndSession();     // End protection
+
+// Peer registration (call when players join/leave)
+IntPtr handle = antiCheat.RegisterPeer(puid);
+antiCheat.UnregisterPeer(puid);
+
+// Status checking
+if (antiCheat.IsSessionActive) { }
+if (antiCheat.Status == AntiCheatStatus.Protected) { }
+AntiCheatClientViolationType violation = antiCheat.PollStatus();
+
+// Message handling (for P2P anti-cheat messages)
+antiCheat.ReceiveMessageFromPeer(peerHandle, data);
+while (antiCheat.TryGetOutgoingMessage(out var peer, out var data))
+{
+    // Send data to peer over network
+}
+```
+
+**Events:**
+```csharp
+antiCheat.OnSessionStarted += () => { };
+antiCheat.OnSessionEnded += () => { };
+antiCheat.OnIntegrityViolation += (type, message) => { /* Local client cheating */ };
+antiCheat.OnPeerActionRequired += (handle, action, reason) => { /* Kick cheater */ };
+antiCheat.OnPeerAuthStatusChanged += (handle, status) => { };
+```
+
+**Status Values:**
+| Status | Description |
+|--------|-------------|
+| NotInitialized | EAC not yet initialized |
+| NotAvailable | EAC not configured in portal |
+| Initialized | Ready but no session active |
+| Protected | Session active, protection enabled |
+| Violated | Integrity violation detected |
+| Error | Error state |
+
+**Requirements:**
+- Configure EAC in EOS Developer Portal
+- Run integrity tool during build to generate catalogs
+- Windows/Mac/Linux only (mobile not supported)
+
+## Coding Standards
+
+- **Namespace:** `FishNet.Transport.EOSNative`
+- **Platform Defines:** `#if UNITY_ANDROID`, `#if UNITY_STANDALONE_WIN`, `#if UNITY_EDITOR`
+- **Error Handling:** Always check `result != Result.Success`
+- **Async Pattern:** Prefer async/await with `TaskCompletionSource<T>` over coroutines
+
+## Known Gotchas
+
+### SDK Initialization
+- `PlatformInterface.Initialize` only once per process - check `Result.AlreadyConfigured`
+- After `Shutdown()`, cannot reinitialize - SDK calls fail
+- `Tick()` must be called every frame or callbacks never fire
+- `EncryptionKey` must be exactly 64 hex characters
+
+### P2P Connections
+- Max packet 1170 bytes - use PacketFragmenter
+- Both sides need matching `SocketId.SocketName`
+- Server must call `AcceptConnection` for incoming requests
+
+### FishNet-Specific
+- `CLIENT_HOST_ID = short.MaxValue` (32767) for host acting as client
+- Transport inherits `FishNet.Transporting.Transport`
+
+### DeviceID Limitation
+PUIDs from DeviceID auth have no visible display names. We use deterministic "AngryPanda42" style names from PUID hash.
+
+### Platform Issues
+- **Windows Editor:** Dynamic DLL loading via `LoadLibrary`/`GetProcAddress`
+- **Android:** Load `.so` via `AndroidJavaClass`, different path for Unity 6+
+- **DLL Config:** Must configure x86/x64 DLLs in Inspector for correct platform
+
+## Implementation Status
+
+### Done
+- EOS SDK Init, Device Token Login, Auto-Setup
+- Transport, Server/Client/ClientHost, P2P
+- Lobbies (4-digit codes, search, attributes)
+- Packet Fragmentation, Fast Disconnect
+- Voice/RTC with Pitch Shifting (SMBPitchShifter)
+- Text Chat (lobby-based, survives migration)
+- Host Migration Framework (scene object reset, player repossession)
+- Cloud Storage, Stats, Leaderboards, Achievements
+- Friends, Presence, CustomInvites
+- Reports, Sanctions, Metrics
+- Setup Wizard, Tools Menu
+- **PhysicsNetworkTransform** - Spring-based physics sync (replaces ownership swapping)
+- **PlayerBall simplified** - Uses PhysicsNetworkTransform, no input syncing
+- **Centralized Debug Logging** - 29 categories, 9 groups, group muting, Editor window
+- **Local Friends System** - Mark recently played players as friends, with cloud sync across devices
+- **Ping Display** - Shows actual RTT from FishNet TimeManager (color-coded)
+- **Invite UX** - Quick-send buttons for friends, star toggles in Recently Played
+- **Friend Online Status** - Shows "In Lobby", "In Game", or "Offline" for local friends with Join button
+- **Toast Notifications** - Non-intrusive popup system for events (EOSToastManager)
+- **Block List System** - Block players with cloud sync, hidden from Recently Played
+- **Quick Join Friend** - One-click join friend's current lobby
+- **Friend Notes** - Add personal notes to friends (persists locally)
+- **Connection Quality Indicator** - Shows ping, jitter, and quality rating (●●●●○)
+- **Platform ID Mapping** - Shows platform icons for players (Windows/Mac/Linux/Android/iOS/Quest)
+- **Lobby Chat History** - Chat persists to cloud, loads on rejoin
+- **Match History** - Tracks games played, participants, outcomes (EOSMatchHistory)
+- **Spectator Mode** - Watch games without participating, free camera or follow players
+- **Host Migration Tester** - Runtime verification checklist for migration testing
+- **Party System** - Persistent groups with follow-the-leader, ready checks, configurable modes
+- **Ranked Matchmaking** - Skill-based matchmaking with ELO/Glicko-2/SimpleMMR, tier display, cloud-persisted ratings
+- **Replay System** - Record/playback games with timeline controls, favorites, export/import, duration limits, quality warnings
+- **Anti-Cheat (EAC)** - Easy Anti-Cheat integration with session management, peer validation, violation detection
+
+### Next Up
+
+#### Technical
+- Voice chat recording in replays
+
+## Debug Tools
+
+### Debug Settings Window
+`Tools > FishNet EOS Native > Debug Settings`
+- 29 categories in 9 groups (Core, Lobby, Voice, Migration, Social, Stats, Storage, Moderation, Demo)
+- Group mute toggles for quick filtering
+- Settings stored in `Resources/EOSDebugSettings.asset`
+
+### Runtime Debug Panels
+- **F1** - Main UI (lobby, chat, stats, invites, local friends, recently played, match history, replays)
+- **F3** - Voice debug (RTC, participants, levels)
+- **F4** - Network debug (P2P, bandwidth, ping/jitter/quality, migration)
+
+## Official Docs
+
+- Portal: `dev.epicgames.com/portal`
+- API Reference: `dev.epicgames.com/docs/api-ref`
+- Credentials: Portal → Your Product → Product Settings

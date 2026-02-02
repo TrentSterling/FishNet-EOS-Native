@@ -1,0 +1,30 @@
+{
+  "name": "com.tront.fishnet-eos-native",
+  "version": "0.9.1",
+  "displayName": "FishNet EOS Native Transport",
+  "description": "Standalone Transport for FishNet using Epic Online Services (EOS) directly via raw C# SDK. No PlayEveryWare dependency. Features: P2P networking, 4-digit lobby codes, voice chat, text chat, host migration, friends, presence, stats, leaderboards, achievements, cloud storage, and more.",
+  "unity": "6000.0",
+  "unityRelease": "0f1",
+  "documentationUrl": "https://github.com/TrentSterling/FishNet-EOS-Native#readme",
+  "changelogUrl": "https://github.com/TrentSterling/FishNet-EOS-Native/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/TrentSterling/FishNet-EOS-Native/blob/main/LICENSE",
+  "dependencies": {
+    "com.unity.inputsystem": "1.7.0"
+  },
+  "keywords": [
+    "fishnet",
+    "eos",
+    "epic",
+    "transport",
+    "multiplayer",
+    "networking",
+    "p2p",
+    "voice",
+    "lobby"
+  ],
+  "author": {
+    "name": "Trent Sterling",
+    "email": "trent@tront.xyz",
+    "url": "https://tront.xyz"
+  }
+}
