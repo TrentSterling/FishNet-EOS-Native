@@ -206,10 +206,11 @@ This project was built by studying these excellent open-source projects:
 ### Special Thanks
 
 - **Skylar (CometDev)** ([GitHub](https://github.com/SkylarSDev) | [Website](https://skylardev.xyz)) - PhysicsNetworkTransform spring-based sync, feature ideas, and relentless encouragement
+- **Duck** - Voice effects (Doppler, pitch shifting), sanctions toggle, and extensive feature suggestions
 - **DrewMileham** - Original spring physics method
 - **[Roceh](https://github.com/Roceh)** - 3D spatialized voice patterns from FishNetEosVivoxLobbyTest
 - **AFoolsDuty** - Getting me into agentic coding workflows
-- **The Discord Rubber Ducks** - Wheelz, Duck, Andre, Daver 2.0
+- **The Discord Rubber Ducks** - Wheelz, Andre, Daver 2.0
 
 ## License
 
