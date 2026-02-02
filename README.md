@@ -196,7 +196,10 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 This project was built by studying these excellent open-source projects:
 
 - **[FishyEOS](https://github.com/ETdoFresh/FishyEOS)** by ETdoFresh
-- **[EOSTransport](https://github.com/FakeByte/EpicOnlineTransport)** by FakeByte
+- **EOSTransport for Mirror** - Raw SDK patterns, packet fragmentation, Android loading
+  - [FakeByte](https://github.com/FakeByte/EpicOnlineTransport) (original creator)
+  - [Katone/WeLoveJesusChrist](https://github.com/WeLoveJesusChrist/EOSTransport) (continuation)
+  - [CodedImmersions](https://github.com/CodedImmersions/EOSTransport) (current maintainer)
 - **[PurrNet EOS Transport](https://github.com/quentinleon/PurrNetEOSTransport)** by qwolf
 - **[EOS C# SDK](https://dev.epicgames.com/docs/epic-online-services)** by Epic Games
 
