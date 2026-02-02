@@ -1,0 +1,20 @@
+{
+    "name": "FishNet.Transport.EOSNative.Editor",
+    "rootNamespace": "FishNet.Transport.EOSNative.Editor",
+    "references": [
+        "FishNet.Runtime",
+        "FishNet.Transport.EOSNative",
+        "Epic.OnlineServices"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
