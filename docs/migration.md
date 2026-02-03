@@ -40,7 +40,7 @@ public class MyGameObject : NetworkBehaviour
 }
 ```
 
-## Excluding Objects from Migration
+## Excluding Objects from Migration (Recommended)
 
 Add the `DoNotMigrate` component to exclude specific objects:
 
@@ -56,6 +56,8 @@ Use `DoNotMigrate` for:
 - Projectiles mid-flight
 - Objects that should reset on host change
 - Intentionally transient objects
+
+> **Tip:** `DoNotMigrate` is the simplest way to exclude objects. Use `HostMigratable` only if you need custom SyncVar caching or migration detection.
 
 ## Advanced: HostMigratable Component (Optional)
 

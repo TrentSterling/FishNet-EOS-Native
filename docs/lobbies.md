@@ -88,6 +88,39 @@ else
 }
 ```
 
+### Quick Match with Filters
+
+Filter quick match by game mode, region, or other criteria:
+
+```csharp
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
+    new LobbySearchOptions()
+        .WithGameMode("deathmatch")
+        .WithRegion("us-east")
+        .WithBucketId("v1.0.1")
+        .ExcludeFull()
+);
+
+if (didHost)
+    Debug.Log($"Created lobby: {lobby.Code}");
+else
+    Debug.Log($"Joined lobby: {lobby.Code}");
+```
+
+Available filters:
+
+| Method | Description |
+|--------|-------------|
+| `.WithGameMode(string)` | Filter by game mode |
+| `.WithRegion(string)` | Filter by region |
+| `.WithBucketId(string)` | Filter by version/platform |
+| `.WithMinPlayers(int)` | Minimum players in lobby |
+| `.WithMaxPlayers(int)` | Maximum lobby capacity |
+| `.ExcludeFull()` | Only lobbies with space |
+| `.ExcludePassworded()` | Only public lobbies |
+
+If no matching lobby is found, one is automatically created with those settings.
+
 ## Searching for Lobbies
 
 ```csharp
