@@ -206,6 +206,11 @@ Current development tasks for FishNet-EOS-Native.
 
 ## Community Requests (Discord)
 
+### Auto-Install Dependencies (Duck)
+- [ ] **Auto-install EOS SDK** - Detect if EOS SDK is missing and offer to install via Package Manager
+- [ ] **Auto-install FishNet** - Detect if FishNet is missing and offer to install via Package Manager
+- Note: Would make setup truly zero-friction - just import the transport and everything else gets pulled in automatically
+
 ### Voice Effects (Duck)
 - [x] **Doppler effect** - Exposed in EOSVoicePlayer and FishNetVoicePlayer (spatialBlend, dopplerLevel 0-5, minDistance, maxDistance, rolloffMode)
 - [x] **Pitch shift / voice changer** - SMBPitchShifter (STFT-based) integrated into EOSVoicePlayer (0.5 = octave down, 2.0 = octave up)
