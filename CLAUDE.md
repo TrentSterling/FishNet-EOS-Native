@@ -48,6 +48,8 @@ EOS Lobby (persistent layer)
 | Max lobbies/user | 16 |
 | Create/Join rate | 30/min |
 | Attribute updates | 100/min |
+| Attribute value length | 1000 chars |
+| Voice participants | 64 (SDK 1.16+) |
 
 ## File Structure
 
