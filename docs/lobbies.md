@@ -24,15 +24,24 @@ EOS Lobby (persistent layer)
 ```csharp
 var transport = GetComponent<EOSNativeTransport>();
 
-// Auto-generates 4-digit code
+// Auto-generates 4-digit code (default)
 var (result, lobby) = await transport.HostLobbyAsync();
 Debug.Log($"Code: {lobby.Code}"); // e.g., "7294"
 ```
 
-### With Specific Code
+### With Custom Code
+
+Lobby codes can be any string - not limited to 4 digits:
 
 ```csharp
+// 4-digit code (easy to share verbally)
 var (result, lobby) = await transport.HostLobbyAsync("1234");
+
+// Alphanumeric code
+var (result, lobby) = await transport.HostLobbyAsync("ABC123");
+
+// Any custom string
+var (result, lobby) = await transport.HostLobbyAsync("my-awesome-lobby");
 ```
 
 ### With Full Options

@@ -21,11 +21,12 @@ Get FishNet EOS Native running in your project.
 ```csharp
 var transport = GetComponent<EOSNativeTransport>();
 
-// Simple host (generates random 4-digit code)
+// Simple host (generates random 4-digit code by default)
 var (result, lobby) = await transport.HostLobbyAsync();
 
-// Host with specific code
+// Host with custom code (any string works)
 var (result, lobby) = await transport.HostLobbyAsync("1234");
+var (result, lobby) = await transport.HostLobbyAsync("MyRoom");
 
 // Host with full options
 var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
