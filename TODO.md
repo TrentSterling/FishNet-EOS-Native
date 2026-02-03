@@ -211,6 +211,17 @@ Current development tasks for FishNet-EOS-Native.
 - [ ] **Auto-install FishNet** - Detect if FishNet is missing and offer to install via Package Manager
 - Note: Would make setup truly zero-friction - just import the transport and everything else gets pulled in automatically
 
+### Lobby Code Flexibility (Duck)
+- [ ] **Configurable lobby code format** - Not limited to 4-digit codes, allow any string
+- [ ] **EOS token codes** - Option to use EOS-generated tokens (long random strings) as lobby identifiers
+- [ ] **Name search via attributes** - Search lobbies by name attribute instead of just code
+- Note: Make code format configurable (4-digit, 6-char alphanumeric, EOS token, custom)
+
+### QuickMatch Improvements (Duck)
+- [ ] **QuickMatch by attributes** - Filter QuickMatch by lobby attributes (game mode, map, region, etc.)
+- [ ] **Attribute-based matchmaking** - Find lobbies matching specific criteria, not just "any available"
+- Note: Currently QuickMatch finds any lobby; should support `QuickMatchOrHostAsync(LobbySearchOptions)`
+
 ### Voice Effects (Duck)
 - [x] **Doppler effect** - Exposed in EOSVoicePlayer and FishNetVoicePlayer (spatialBlend, dopplerLevel 0-5, minDistance, maxDistance, rolloffMode)
 - [x] **Pitch shift / voice changer** - SMBPitchShifter (STFT-based) integrated into EOSVoicePlayer (0.5 = octave down, 2.0 = octave up)
