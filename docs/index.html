@@ -98,13 +98,76 @@
       margin: 0;
     }
 
-    .sidebar ul li ul {
-      padding-left: 0;
+    /* Parent items with children get a chevron */
+    .sidebar-nav li > a:only-child {
+      /* No children, no arrow */
     }
 
-    .sidebar ul li ul li a {
-      padding-left: 2rem;
-      font-size: 0.85rem;
+    .sidebar-nav > ul > li > ul {
+      /* First level pages */
+    }
+
+    /* Items that have sub-items (nested ul) */
+    .sidebar-nav li.has-children > a::after,
+    .sidebar-nav > ul > li > a:not(:only-child)::after {
+      content: '';
+      display: inline-block;
+      width: 0;
+      height: 0;
+      margin-left: 0.5rem;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid var(--text-muted);
+      transition: transform 0.2s ease;
+      vertical-align: middle;
+    }
+
+    /* Active/expanded state - rotate arrow */
+    .sidebar-nav li.active > a::after,
+    .sidebar-nav > ul > li.active > a:not(:only-child)::after {
+      transform: rotate(180deg);
+      border-top-color: var(--accent);
+    }
+
+    /* Sub-navigation container */
+    .sidebar-nav li ul {
+      padding-left: 0;
+      margin-left: 0;
+      border-left: 2px solid var(--border);
+      margin-left: 1.25rem;
+      margin-top: 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Sub-navigation items */
+    .sidebar-nav li ul li a {
+      padding: 0.35rem 1rem 0.35rem 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-left: none;
+    }
+
+    .sidebar-nav li ul li a:hover {
+      color: var(--text-secondary);
+      background: transparent;
+      border-left: none;
+    }
+
+    .sidebar-nav li ul li.active a {
+      color: var(--accent-light);
+      background: transparent;
+      font-weight: 500;
+    }
+
+    /* Deeper nesting */
+    .sidebar-nav li ul li ul {
+      margin-left: 0.75rem;
+      border-left-color: var(--border-light);
+    }
+
+    .sidebar-nav li ul li ul li a {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.75rem;
     }
 
     /* App name / logo */
@@ -494,5 +557,19 @@
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-csharp.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+  <!-- Mark sidebar items with children -->
+  <script>
+    function markSidebarParents() {
+      document.querySelectorAll('.sidebar-nav li').forEach(li => {
+        if (li.querySelector('ul')) {
+          li.classList.add('has-children');
+        }
+      });
+    }
+    // Run on load and on route change
+    window.$docsify.plugins = (window.$docsify.plugins || []).concat(function(hook) {
+      hook.doneEach(markSidebarParents);
+    });
+  </script>
 </body>
 </html>
