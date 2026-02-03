@@ -236,7 +236,18 @@ Current development tasks for FishNet-EOS-Native.
 ### Voice Effects (Duck)
 - [x] **Doppler effect** - Exposed in EOSVoicePlayer and FishNetVoicePlayer (spatialBlend, dopplerLevel 0-5, minDistance, maxDistance, rolloffMode)
 - [x] **Pitch shift / voice changer** - SMBPitchShifter (STFT-based) integrated into EOSVoicePlayer (0.5 = octave down, 2.0 = octave up)
+- [ ] **Voice logging for replay** - Record voice chat chunks during gameplay for playback in replays ("skinwalker" use case - mimic other players' voices)
 - Note: Current pitch shift is on playback side (per-listener). Future: add mic-side processing for "everyone hears your changed voice"
+
+### Backend Integrations (Duck)
+- [ ] **PlayFab integration** - Optional separate Unity package for PlayFab backend services
+- [ ] **LootLocker integration** - Optional separate Unity package for LootLocker backend services
+- Note: Not required to have installed, but available as add-on packages for devs who want those backends
+
+### Device Bans & Identity (Duck)
+- [ ] **Device bans via Meta attestation** - Hardware-level bans using platform attestation (Quest/Meta devices)
+- [ ] **Cross-provider identity integration** - Unified account linking across all identity providers (Epic, Steam, Discord, PlayStation, Xbox, etc.)
+- Note: Integrates "all the account shit across all the identity providers"
 
 ### Authentication Improvements
 - [ ] **Nonce support** - Prevent replay attacks on auth
