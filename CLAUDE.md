@@ -659,7 +659,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 ### Done
 - EOS SDK Init, Device Token Login, Auto-Setup
 - Transport, Server/Client/ClientHost, P2P
-- Lobbies (4-digit codes, search, attributes)
+- Lobbies (custom join codes, search, attributes)
 - Packet Fragmentation, Fast Disconnect
 - Voice/RTC with Pitch Shifting (SMBPitchShifter) and 3D Spatial Audio (SpatialBlend, DopplerLevel)
 - Text Chat (lobby-based, survives migration)

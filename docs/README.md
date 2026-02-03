@@ -6,7 +6,7 @@
 
 - **Direct EOS Integration** - Uses `Epic.OnlineServices` directly, no wrapper plugins
 - **Full Transport** - Server, Client, and ClientHost modes with P2P networking
-- **Lobbies** - 4-digit codes, search, custom attributes, max 64 players
+- **Lobbies** - Custom join codes (any string), search, attributes, max 64 players
 - **Voice Chat** - Built-in RTC with pitch shifting and per-player controls
 - **Text Chat** - Lobby-based chat with cloud-persisted history
 - **Host Migration** - Automatic migration for all objects (opt-out with DoNotMigrate)
