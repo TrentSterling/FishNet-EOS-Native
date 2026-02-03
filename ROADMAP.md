@@ -206,6 +206,39 @@ Assets/FishNet.Transport.EOSNative/
 - **Epic Account Linking** - Upgrade from DeviceID to Epic Account
 - **Mobile Testing** - Android, Quest, iOS verification
 
+### Community-Requested Features (Duck)
+
+#### Unified LobbyOptions API
+Single options class for all lobby operations with BucketId support:
+```csharp
+var options = new LobbyOptions()
+    .WithGameMode("ranked")
+    .WithBucketId("us-east")
+    .WithMaxPlayers(8);
+
+// Works with all methods
+await transport.HostLobbyAsync(options);
+await transport.JoinLobbyAsync("1234", options);
+await transport.QuickMatchOrHostAsync(options);
+```
+
+#### QuickMatch by Attributes
+Filter QuickMatch by lobby attributes instead of "any available":
+```csharp
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
+    new LobbyOptions().WithGameMode("deathmatch").WithRegion("us-east")
+);
+```
+
+#### Configurable Lobby Codes
+Not limited to 4-digit codes - support any string format:
+- 6-character alphanumeric (ABC123)
+- EOS-generated tokens (long random strings)
+- Custom formats per game
+
+#### Auto-Install Dependencies
+Detect missing EOS SDK and FishNet, offer to install via Package Manager for zero-friction setup
+
 ---
 
 ## Connection Security

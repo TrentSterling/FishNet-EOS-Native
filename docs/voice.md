@@ -58,6 +58,63 @@ voice.SetPlayerPitch(puid, 1.0f);  // Normal
 float pitch = voice.GetPlayerPitch(puid);
 ```
 
+## 3D Spatial Audio
+
+Configure spatial audio for immersive positional voice.
+
+### Spatial Blend
+
+```csharp
+var voicePlayer = GetComponent<FishNetVoicePlayer>();
+
+// 0 = 2D (no positioning), 1 = full 3D
+voicePlayer.SpatialBlend = 1f;
+```
+
+### Doppler Effect
+
+```csharp
+// 0 = off, 1 = normal, higher = exaggerated
+voicePlayer.DopplerLevel = 1f;
+
+// Doppler works automatically as players move relative to listener
+```
+
+### Distance Rolloff
+
+Configure via Inspector or code:
+
+```csharp
+// Inspector defaults (recommended to configure there)
+// - Min Distance: 1
+// - Max Distance: 50
+// - Rolloff Mode: Logarithmic
+
+// Or access the underlying AudioSource
+voicePlayer.AudioSource.minDistance = 1f;
+voicePlayer.AudioSource.maxDistance = 50f;
+voicePlayer.AudioSource.rolloffMode = AudioRolloffMode.Linear;
+```
+
+### Full 3D Audio Setup
+
+For fully immersive positional voice:
+
+```csharp
+var voicePlayer = GetComponent<FishNetVoicePlayer>();
+
+// Enable full 3D positioning
+voicePlayer.SpatialBlend = 1f;
+
+// Enable doppler for moving players
+voicePlayer.DopplerLevel = 1f;
+
+// Configure in Inspector:
+// - Min Distance: 1 (full volume within this range)
+// - Max Distance: 50 (silent beyond this range)
+// - Rolloff Mode: Logarithmic (natural falloff)
+```
+
 ## Audio Levels
 
 Monitor voice activity:

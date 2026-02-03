@@ -206,6 +206,9 @@ Current development tasks for FishNet-EOS-Native.
 
 ## Community Requests (Discord)
 
+### Documentation Improvements (Duck)
+- [ ] **Improve host migration callbacks docs** - Make OnMigrationStarted/OnMigrationCompleted more prominent and add use case examples
+
 ### Auto-Install Dependencies (Duck)
 - [ ] **Auto-install EOS SDK** - Detect if EOS SDK is missing and offer to install via Package Manager
 - [ ] **Auto-install FishNet** - Detect if FishNet is missing and offer to install via Package Manager

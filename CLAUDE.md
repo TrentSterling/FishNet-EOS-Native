@@ -652,7 +652,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - Transport, Server/Client/ClientHost, P2P
 - Lobbies (4-digit codes, search, attributes)
 - Packet Fragmentation, Fast Disconnect
-- Voice/RTC with Pitch Shifting (SMBPitchShifter)
+- Voice/RTC with Pitch Shifting (SMBPitchShifter) and 3D Spatial Audio (SpatialBlend, DopplerLevel)
 - Text Chat (lobby-based, survives migration)
 - Host Migration Framework (scene object reset, player repossession)
 - Cloud Storage, Stats, Leaderboards, Achievements
