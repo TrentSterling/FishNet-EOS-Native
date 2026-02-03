@@ -217,10 +217,18 @@ Current development tasks for FishNet-EOS-Native.
 - [ ] **Name search via attributes** - Search lobbies by name attribute instead of just code
 - Note: Make code format configurable (4-digit, 6-char alphanumeric, EOS token, custom)
 
+### Unified LobbyOptions API (Duck)
+- [ ] **Single `LobbyOptions` class** - Unified options for host, join, quickmatch (like Fusion's approach)
+- [ ] **BucketId field** - Add bucket ID support for lobby grouping/filtering
+- [ ] **Fluent builder pattern** - `new LobbyOptions().WithGameMode("ranked").WithBucketId("us-east")`
+- [ ] **Apply to all methods** - `HostLobbyAsync(options)`, `JoinLobbyAsync(code, options)`, `QuickMatchOrHostAsync(options)`
+- Note: Clean abstraction - one options class rules them all
+
 ### QuickMatch Improvements (Duck)
 - [ ] **QuickMatch by attributes** - Filter QuickMatch by lobby attributes (game mode, map, region, etc.)
 - [ ] **Attribute-based matchmaking** - Find lobbies matching specific criteria, not just "any available"
-- Note: Currently QuickMatch finds any lobby; should support `QuickMatchOrHostAsync(LobbySearchOptions)`
+- [ ] **Bucket-based matching** - Use EOS bucket IDs for regional/mode-based matchmaking pools
+- Note: Currently QuickMatch finds any lobby; should support `QuickMatchOrHostAsync(LobbyOptions)`
 
 ### Voice Effects (Duck)
 - [x] **Doppler effect** - Exposed in EOSVoicePlayer and FishNetVoicePlayer (spatialBlend, dopplerLevel 0-5, minDistance, maxDistance, rolloffMode)
