@@ -20,14 +20,24 @@ All notable changes to FishNet-EOS-Native will be documented in this file.
 - Updated ROADMAP.md with community-requested features (Duck's suggestions)
 - Updated TODO.md with completed migration flip and new community requests
 
+#### QuickMatch with Search Options
+- **LobbySearchOptions parameter** - `QuickMatchOrHostAsync` now accepts optional filters
+- Filter methods:
+  - `.WithGameMode(string)` - Filter by game mode
+  - `.WithRegion(string)` - Filter by region
+  - `.WithMinPlayers(int)` - Minimum player count
+  - `.WithMaxPlayers(int)` - Maximum player count
+  - `.ExcludeFull()` - Only lobbies with space
+  - `.ExcludePassworded()` - Only public lobbies
+  - `.WithBucketId(string)` - Filter by version/platform bucket
+  - `.WithMaxResults(int)` - Limit search results
+- Search filters automatically copied to host options for fallback hosting
+
 ### Community Requests Logged (Duck)
 - Voice logging for replay playback
 - PlayFab/LootLocker optional integrations
 - Device bans via Meta attestation
 - Cross-provider identity integration
-- Unified LobbyOptions API with BucketId
-- QuickMatch by attributes
-- Configurable lobby codes
 
 ---
 

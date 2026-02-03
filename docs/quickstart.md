@@ -45,6 +45,13 @@ var (result, lobby) = await transport.JoinLobbyAsync("1234");
 
 // Quick match - finds a lobby or hosts one
 var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
+
+// Or with filters:
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
+    new LobbySearchOptions()
+        .WithGameMode("deathmatch")
+        .ExcludeFull()
+);
 ```
 
 ### Leaving
