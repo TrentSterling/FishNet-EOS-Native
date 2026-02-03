@@ -25,9 +25,41 @@ Seamless handoff when the host disconnects.
 | NetworkObjects | Recreated | Repossessed by new host |
 | Game state | Partial | Scene objects reset |
 
-## Making Objects Migratable
+## Automatic Migration (Default)
 
-Add the `HostMigratable` component to objects that need special handling:
+**All NetworkObjects are automatically migrated by default.** No setup required - spawned objects are tracked and restored during migration.
+
+```csharp
+// This object will automatically migrate - no extra components needed!
+public class MyGameObject : NetworkBehaviour
+{
+    public readonly SyncVar<int> Health = new();
+    public readonly SyncVar<string> PlayerName = new();
+
+    // SyncVars are automatically saved and restored
+}
+```
+
+## Excluding Objects from Migration
+
+Add the `DoNotMigrate` component to exclude specific objects:
+
+```csharp
+// In Inspector: Add Component > FishNet > EOS Native > Do Not Migrate
+
+// Or via code:
+gameObject.AddComponent<DoNotMigrate>();
+```
+
+Use `DoNotMigrate` for:
+- Temporary visual effects
+- Projectiles mid-flight
+- Objects that should reset on host change
+- Intentionally transient objects
+
+## Advanced: HostMigratable Component (Optional)
+
+For objects that need custom migration handling, add the `HostMigratable` component:
 
 ```csharp
 [RequireComponent(typeof(NetworkObject))]
@@ -38,21 +70,31 @@ public class MyGameObject : NetworkBehaviour
     private void Awake()
     {
         _migratable = GetComponent<HostMigratable>();
-        _migratable.OnMigrationStarted += HandleMigrationStarted;
-        _migratable.OnMigrationCompleted += HandleMigrationCompleted;
     }
 
-    private void HandleMigrationStarted()
+    public override void OnStartServer()
     {
-        // Save critical state
-    }
+        base.OnStartServer();
 
-    private void HandleMigrationCompleted()
-    {
-        // Restore or reinitialize
+        // Check if this is a migration restore vs normal spawn
+        if (_migratable.LoadState.HasValue)
+        {
+            // Migration restore - state already loaded
+            Debug.Log("Restored from migration");
+        }
+        else
+        {
+            // Normal spawn - initialize fresh
+            Debug.Log("Fresh spawn");
+        }
     }
 }
 ```
+
+`HostMigratable` provides:
+- Automatic SyncVar caching (handles FishNet clearing SyncVars on disconnect)
+- `LoadState` property to detect migration spawns
+- Owner PUID tracking for repossession
 
 ## Migration Events
 

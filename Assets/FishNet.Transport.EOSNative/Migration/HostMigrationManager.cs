@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using FishNet;
 using FishNet.Managing.Object;
 using FishNet.Object;
+using FishNet.Object.Synchronizing;
 using FishNet.Transporting;
 using FishNet.Transport.EOSNative.Logging;
 using FishNet.Transport.EOSNative.Lobbies;
@@ -15,7 +17,9 @@ namespace FishNet.Transport.EOSNative.Migration
 {
     /// <summary>
     /// Manages host migration for FishNet over EOS.
-    /// Tracks migratable objects and handles state save/restore during migration.
+    /// Automatically tracks ALL NetworkObjects and handles state save/restore during migration.
+    /// Add DoNotMigrate component to exclude specific objects.
+    /// Add HostMigratable component for advanced SyncVar restoration (optional).
     /// </summary>
     public class HostMigrationManager : MonoBehaviour
     {
@@ -69,9 +73,24 @@ namespace FishNet.Transport.EOSNative.Migration
 
         #region Private Fields
 
+        /// <summary>
+        /// All tracked NetworkObjects (auto-tracked, excludes DoNotMigrate).
+        /// </summary>
+        private readonly List<NetworkObject> _trackedObjects = new();
+
+        /// <summary>
+        /// Legacy: Objects with HostMigratable component for backwards compatibility.
+        /// </summary>
         private readonly List<HostMigratable> _migratableObjects = new();
+
         private readonly List<MigratableObjectState> _savedStates = new();
         private readonly Dictionary<string, NetworkObject> _prefabDictionary = new();
+
+        /// <summary>
+        /// Auto-tracked objects waiting for their original owner to reconnect.
+        /// Key = owner PUID, Value = list of NetworkObjects.
+        /// </summary>
+        private readonly Dictionary<string, List<NetworkObject>> _pendingAutoRepossessions = new();
 
         private EOSNativeTransport _transport;
         private EOSLobbyManager _lobbyManager;
@@ -136,6 +155,70 @@ namespace FishNet.Transport.EOSNative.Migration
             {
                 InstanceFinder.ClientManager.OnClientConnectionState += OnClientConnectionState;
             }
+
+            // Subscribe to spawn/despawn events to auto-track ALL NetworkObjects
+            if (InstanceFinder.ServerManager != null)
+            {
+                InstanceFinder.ServerManager.OnSpawnedObject += OnServerSpawnedObject;
+                InstanceFinder.ServerManager.OnDespawnedObject += OnServerDespawnedObject;
+            }
+        }
+
+        /// <summary>
+        /// Called when any NetworkObject is spawned on the server.
+        /// Auto-tracks it for migration unless it has DoNotMigrate.
+        /// </summary>
+        private void OnServerSpawnedObject(NetworkObject nob)
+        {
+            if (nob == null) return;
+
+            // Skip scene objects - they're handled separately
+            if (nob.IsSceneObject) return;
+
+            // Skip objects with DoNotMigrate component
+            if (nob.GetComponent<DoNotMigrate>() != null)
+            {
+                Log($"Skipping auto-track for {nob.name} (has DoNotMigrate)");
+                return;
+            }
+
+            // Auto-track this object
+            if (!_trackedObjects.Contains(nob))
+            {
+                _trackedObjects.Add(nob);
+
+                // Also register the prefab if not already registered
+                string prefabName = nob.gameObject.name.Replace("(Clone)", "").Trim();
+                if (!_prefabDictionary.ContainsKey(prefabName))
+                {
+                    // Find the prefab from NetworkManager's spawnable prefabs
+                    var spawnablePrefabs = InstanceFinder.NetworkManager?.SpawnablePrefabs;
+                    if (spawnablePrefabs != null)
+                    {
+                        for (int i = 0; i < spawnablePrefabs.GetObjectCount(); i++)
+                        {
+                            var prefab = spawnablePrefabs.GetObject(false, i);
+                            if (prefab != null && prefab.gameObject.name == prefabName)
+                            {
+                                _prefabDictionary[prefabName] = prefab;
+                                Log($"Auto-registered prefab: {prefabName}");
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                Log($"Auto-tracking: {nob.name}");
+            }
+        }
+
+        /// <summary>
+        /// Called when any NetworkObject is despawned on the server.
+        /// </summary>
+        private void OnServerDespawnedObject(NetworkObject nob)
+        {
+            if (nob == null) return;
+            _trackedObjects.Remove(nob);
         }
 
         /// <summary>
@@ -164,6 +247,12 @@ namespace FishNet.Transport.EOSNative.Migration
                 InstanceFinder.ClientManager.OnClientConnectionState -= OnClientConnectionState;
             }
 
+            if (InstanceFinder.ServerManager != null)
+            {
+                InstanceFinder.ServerManager.OnSpawnedObject -= OnServerSpawnedObject;
+                InstanceFinder.ServerManager.OnDespawnedObject -= OnServerDespawnedObject;
+            }
+
             if (_instance == this)
             {
                 _instance = null;
@@ -172,29 +261,163 @@ namespace FishNet.Transport.EOSNative.Migration
 
         /// <summary>
         /// Handles client connection state changes.
-        /// Saves migratable object states BEFORE they get despawned on disconnect.
+        /// Saves all tracked object states BEFORE they get despawned on disconnect.
         /// </summary>
         private void OnClientConnectionState(ClientConnectionStateArgs args)
         {
             // We care about Stopping state - this fires BEFORE objects are despawned
             if (args.ConnectionState == LocalConnectionState.Stopping)
             {
-                Log($"Client stopping - saving {_migratableObjects.Count} migratable objects preemptively");
+                int totalObjects = _trackedObjects.Count + _migratableObjects.Count;
+                Log($"Client stopping - saving {totalObjects} objects preemptively");
 
                 // Only save if we haven't already saved (avoid double-save)
-                if (_savedStates.Count == 0 && _migratableObjects.Count > 0)
+                if (_savedStates.Count == 0 && totalObjects > 0)
                 {
+                    // Save auto-tracked objects (new system)
+                    foreach (var nob in _trackedObjects)
+                    {
+                        if (nob == null) continue;
+
+                        var state = SaveNetworkObjectState(nob);
+                        if (state.HasValue)
+                        {
+                            _savedStates.Add(state.Value);
+                            Log($"Pre-saved state for: {state.Value.PrefabName} at {state.Value.Position}");
+                        }
+                    }
+
+                    // Save legacy HostMigratable objects (backwards compatibility)
                     foreach (var migratable in _migratableObjects)
                     {
                         if (migratable == null) continue;
 
+                        // Skip if already saved via auto-tracking
+                        if (_trackedObjects.Contains(migratable.NetworkObject)) continue;
+
                         var state = migratable.SaveDataToStateStruct();
                         _savedStates.Add(state);
-                        Log($"Pre-saved state for: {state.PrefabName} at {state.Position}");
+                        Log($"Pre-saved state for (legacy): {state.PrefabName} at {state.Position}");
                     }
+
                     Log($"Pre-saved {_savedStates.Count} object states before disconnect");
                 }
             }
+        }
+
+        /// <summary>
+        /// Saves state from any NetworkObject (with or without HostMigratable).
+        /// Uses HostMigratable if present for SyncVar data, otherwise saves basic state.
+        /// </summary>
+        private MigratableObjectState? SaveNetworkObjectState(NetworkObject nob)
+        {
+            if (nob == null) return null;
+
+            // If object has HostMigratable, use its save method (includes SyncVars)
+            var migratable = nob.GetComponent<HostMigratable>();
+            if (migratable != null)
+            {
+                return migratable.SaveDataToStateStruct();
+            }
+
+            // Otherwise, save basic state (position, rotation, owner)
+            string ownerPuid = GetOwnerPuid(nob);
+
+            // Only save if we can identify the prefab
+            string prefabName = nob.gameObject.name.Replace("(Clone)", "").Trim();
+            if (!_prefabDictionary.ContainsKey(prefabName))
+            {
+                Log($"Cannot save {nob.name}: prefab not registered");
+                return null;
+            }
+
+            // Capture basic SyncVar data via reflection
+            var syncData = CaptureSyncVarData(nob);
+
+            return new MigratableObjectState
+            {
+                PrefabName = prefabName,
+                Position = nob.transform.position,
+                Rotation = nob.transform.rotation,
+                OwnerPuid = ownerPuid,
+                SyncVarData = syncData
+            };
+        }
+
+        /// <summary>
+        /// Gets the owner's PUID from a NetworkObject.
+        /// </summary>
+        private string GetOwnerPuid(NetworkObject nob)
+        {
+            if (nob.Owner == null) return null;
+
+            string ownerPuid = nob.Owner.GetAddress();
+
+            // Client host doesn't have network address, use local PUID
+            if (string.IsNullOrEmpty(ownerPuid) && nob.Owner.IsLocalClient)
+            {
+                ownerPuid = EOSManager.Instance?.LocalProductUserId?.ToString();
+            }
+
+            return ownerPuid;
+        }
+
+        /// <summary>
+        /// Captures all SyncVar data from a NetworkObject and its children via reflection.
+        /// </summary>
+        private Dictionary<string, Dictionary<string, object>> CaptureSyncVarData(NetworkObject nob)
+        {
+            var syncData = new Dictionary<string, Dictionary<string, object>>();
+            var behaviours = nob.GetComponentsInChildren<NetworkBehaviour>(true);
+
+            foreach (var behaviour in behaviours)
+            {
+                var type = behaviour.GetType();
+                string relPath = GetRelativePath(nob.transform, behaviour.transform);
+                string key = $"{relPath}|{type.Name}_{behaviour.GetInstanceID()}";
+                var compData = new Dictionary<string, object>();
+
+                var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                foreach (var field in fields)
+                {
+                    if (field.FieldType.IsGenericType &&
+                        field.FieldType.GetGenericTypeDefinition() == typeof(SyncVar<>))
+                    {
+                        var syncVarInstance = field.GetValue(behaviour);
+                        var valueProp = field.FieldType.GetProperty("Value");
+                        if (valueProp != null)
+                        {
+                            var value = valueProp.GetValue(syncVarInstance);
+                            compData[field.Name] = value;
+                        }
+                    }
+                }
+
+                if (compData.Count > 0)
+                {
+                    syncData[key] = compData;
+                }
+            }
+
+            return syncData.Count > 0 ? syncData : null;
+        }
+
+        /// <summary>
+        /// Gets the relative path from root to child transform.
+        /// </summary>
+        private string GetRelativePath(Transform root, Transform child)
+        {
+            if (child == root) return "ROOT";
+
+            var names = new List<string>();
+            var current = child;
+            while (current != null && current != root)
+            {
+                names.Add(current.name);
+                current = current.parent;
+            }
+            names.Reverse();
+            return string.Join("/", names);
         }
 
         #endregion
@@ -296,11 +519,39 @@ namespace FishNet.Transport.EOSNative.Migration
         public void ClearMigrationState()
         {
             _savedStates.Clear();
+            _trackedObjects.Clear();
             _migratableObjects.Clear();
+            _pendingAutoRepossessions.Clear();
             HostMigratable.ClearPendingRepossessions();
             IsMigrating = false;
             Log("Migration state cleared");
         }
+
+        /// <summary>
+        /// Gets auto-tracked objects pending repossession for a specific owner.
+        /// Called by HostMigrationPlayerSpawner when a player reconnects.
+        /// </summary>
+        public List<NetworkObject> GetPendingAutoRepossessions(string ownerPuid)
+        {
+            if (_pendingAutoRepossessions.TryGetValue(ownerPuid, out var objects))
+            {
+                return objects;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Clears pending auto-repossessions for an owner after they've been claimed.
+        /// </summary>
+        public void ClearPendingAutoRepossessions(string ownerPuid)
+        {
+            _pendingAutoRepossessions.Remove(ownerPuid);
+        }
+
+        /// <summary>
+        /// Total count of tracked objects (auto + legacy).
+        /// </summary>
+        public int TotalTrackedCount => _trackedObjects.Count + _migratableObjects.Count;
 
         #endregion
 
@@ -332,7 +583,7 @@ namespace FishNet.Transport.EOSNative.Migration
         }
 
         /// <summary>
-        /// Save all migratable object states.
+        /// Save all tracked object states (auto-tracked + legacy HostMigratable).
         /// </summary>
         private void MigrationDetectedSaveNow()
         {
@@ -344,7 +595,8 @@ namespace FishNet.Transport.EOSNative.Migration
                 return;
             }
 
-            Log($"Saving migratable object states... (tracking {_migratableObjects.Count} objects, {_prefabDictionary.Count} prefabs registered)");
+            int totalObjects = _trackedObjects.Count + _migratableObjects.Count;
+            Log($"Saving object states... (auto-tracked: {_trackedObjects.Count}, legacy: {_migratableObjects.Count}, prefabs: {_prefabDictionary.Count})");
 
             // Log registered prefabs for debugging
             foreach (var kvp in _prefabDictionary)
@@ -352,13 +604,30 @@ namespace FishNet.Transport.EOSNative.Migration
                 Log($"Registered prefab: {kvp.Key}");
             }
 
+            // Save auto-tracked objects (new system)
+            foreach (var nob in _trackedObjects)
+            {
+                if (nob == null) continue;
+
+                var state = SaveNetworkObjectState(nob);
+                if (state.HasValue)
+                {
+                    _savedStates.Add(state.Value);
+                    Log($"Saved state for: {state.Value.PrefabName} at {state.Value.Position}");
+                }
+            }
+
+            // Save legacy HostMigratable objects (backwards compatibility)
             foreach (var migratable in _migratableObjects)
             {
                 if (migratable == null) continue;
 
+                // Skip if already saved via auto-tracking
+                if (_trackedObjects.Contains(migratable.NetworkObject)) continue;
+
                 var state = migratable.SaveDataToStateStruct();
                 _savedStates.Add(state);
-                Log($"Saved state for: {state.PrefabName} at {state.Position}");
+                Log($"Saved state for (legacy): {state.PrefabName} at {state.Position}");
             }
 
             Log($"Saved {_savedStates.Count} object states");
@@ -610,6 +879,7 @@ namespace FishNet.Transport.EOSNative.Migration
 
         /// <summary>
         /// Restore all saved object states after server restart.
+        /// Handles both HostMigratable objects (with SyncVar restoration) and plain NetworkObjects.
         /// </summary>
         private void MigrationFinish()
         {
@@ -634,6 +904,9 @@ namespace FishNet.Transport.EOSNative.Migration
                 HostMigratable.ClearPendingRepossessions();
             }
 
+            // Also clean up pending repossessions for auto-tracked objects
+            _pendingAutoRepossessions.Clear();
+
             // Iterate over a copy because SetActive(false) triggers OnDisable -> SaveObjectStateOnDisable
             // which would modify _savedStates during enumeration
             var statesToRestore = new List<MigratableObjectState>(_savedStates);
@@ -650,29 +923,17 @@ namespace FishNet.Transport.EOSNative.Migration
                 // Spawn the object
                 var go = Instantiate(prefab, state.Position, state.Rotation);
 
-                // Set LoadState BEFORE spawn so OnStartServer can detect migration restore
+                // Check if object has HostMigratable (for backwards compatibility)
                 var migratable = go.GetComponent<HostMigratable>();
                 if (migratable != null)
                 {
+                    // Use legacy HostMigratable restoration path
                     migratable.LoadState = state;
-                }
-
-                InstanceFinder.ServerManager.Spawn(go, null);
-
-                // Load state and register for repossession
-                if (migratable != null)
-                {
+                    InstanceFinder.ServerManager.Spawn(go, null);
                     migratable.LoadDataFromStateStruct(state);
-
-                    // Clear LoadState now that restoration is complete
-                    // Other components (like PlayerBall) have already checked LoadState.HasValue
-                    // during OnStartServer to know this was a migration spawn
                     migratable.LoadState = null;
 
-                    // Register for repossession directly using known PUID from saved state
-                    // NOTE: We cannot use migratable.MarkForRepossession() here because
-                    // FishNet SyncVars don't return the new value immediately after being set.
-                    // The SyncVar.Value getter returns empty in the same frame it was set.
+                    // Register for repossession
                     if (!string.IsNullOrEmpty(state.OwnerPuid))
                     {
                         if (!HostMigratable.PendingRepossessions.ContainsKey(state.OwnerPuid))
@@ -680,12 +941,92 @@ namespace FishNet.Transport.EOSNative.Migration
                             HostMigratable.PendingRepossessions[state.OwnerPuid] = new List<HostMigratable>();
                         }
                         HostMigratable.PendingRepossessions[state.OwnerPuid].Add(migratable);
-                        migratable.gameObject.SetActive(false); // Deactivate until claimed
-                        Log($"Registered for repossession: {state.PrefabName} for owner {state.OwnerPuid.Substring(0, 8)}...");
+                        migratable.gameObject.SetActive(false);
+                        Log($"Registered for repossession (legacy): {state.PrefabName} for owner {state.OwnerPuid.Substring(0, 8)}...");
                     }
                     else
                     {
-                        Log($"Restored: {state.PrefabName} (no owner PUID - scene object or unowned)");
+                        Log($"Restored (legacy): {state.PrefabName} (no owner)");
+                    }
+                }
+                else
+                {
+                    // New auto-migration path: restore without HostMigratable
+                    var nob = go.GetComponent<NetworkObject>();
+                    InstanceFinder.ServerManager.Spawn(go, null);
+
+                    // Restore SyncVar data
+                    if (state.SyncVarData != null)
+                    {
+                        RestoreSyncVarData(nob, state);
+                    }
+
+                    // Register for repossession (using new system)
+                    if (!string.IsNullOrEmpty(state.OwnerPuid))
+                    {
+                        if (!_pendingAutoRepossessions.ContainsKey(state.OwnerPuid))
+                        {
+                            _pendingAutoRepossessions[state.OwnerPuid] = new List<NetworkObject>();
+                        }
+                        _pendingAutoRepossessions[state.OwnerPuid].Add(nob);
+                        go.SetActive(false);
+                        Log($"Registered for repossession (auto): {state.PrefabName} for owner {state.OwnerPuid.Substring(0, 8)}...");
+                    }
+                    else
+                    {
+                        Log($"Restored (auto): {state.PrefabName} (no owner)");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Restores SyncVar data to a NetworkObject without HostMigratable.
+        /// </summary>
+        private void RestoreSyncVarData(NetworkObject nob, MigratableObjectState state)
+        {
+            if (state.SyncVarData == null || nob == null) return;
+
+            foreach (var kvp in state.SyncVarData)
+            {
+                string[] parts = kvp.Key.Split('|');
+                if (parts.Length != 2) continue;
+
+                string relPath = parts[0];
+                string[] typeParts = parts[1].Split('_');
+                if (typeParts.Length < 2) continue;
+
+                string typeName = typeParts[0];
+                var targetTransform = relPath == "ROOT" ? nob.transform : nob.transform.Find(relPath);
+                if (targetTransform == null) continue;
+
+                var comps = targetTransform.GetComponents<NetworkBehaviour>();
+                NetworkBehaviour targetComp = null;
+                foreach (var comp in comps)
+                {
+                    if (comp.GetType().Name == typeName)
+                    {
+                        targetComp = comp;
+                        break;
+                    }
+                }
+
+                if (targetComp == null) continue;
+
+                var compData = kvp.Value;
+                var fields = targetComp.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                foreach (var field in fields)
+                {
+                    if (field.FieldType.IsGenericType &&
+                        field.FieldType.GetGenericTypeDefinition() == typeof(SyncVar<>))
+                    {
+                        if (compData.TryGetValue(field.Name, out var value))
+                        {
+                            var syncVarInstance = field.GetValue(targetComp);
+                            var valueProp = field.FieldType.GetProperty("Value");
+                            valueProp?.SetValue(syncVarInstance, value);
+                            Log($"  Restored {field.Name} = {value}");
+                        }
                     }
                 }
             }
@@ -706,9 +1047,11 @@ namespace FishNet.Transport.EOSNative.Migration
         #region Editor Access (for inspector)
 
 #if UNITY_EDITOR
-        internal int TrackedObjectCount => _migratableObjects.Count;
+        internal int TrackedObjectCount => _trackedObjects.Count;
+        internal int LegacyMigratableCount => _migratableObjects.Count;
         internal int SavedStateCount => _savedStates.Count;
         internal int PrefabCount => _prefabDictionary.Count;
+        internal int PendingAutoRepossessionCount => _pendingAutoRepossessions.Count;
 #endif
 
         #endregion
@@ -738,9 +1081,11 @@ namespace FishNet.Transport.EOSNative.Migration
                 EditorGUILayout.EndHorizontal();
 
                 // Tracked objects
-                EditorGUILayout.IntField("Tracked Objects", manager.TrackedObjectCount);
+                EditorGUILayout.IntField("Auto-Tracked Objects", manager.TrackedObjectCount);
+                EditorGUILayout.IntField("Legacy (HostMigratable)", manager.LegacyMigratableCount);
                 EditorGUILayout.IntField("Saved States", manager.SavedStateCount);
                 EditorGUILayout.IntField("Registered Prefabs", manager.PrefabCount);
+                EditorGUILayout.IntField("Pending Auto-Repossess", manager.PendingAutoRepossessionCount);
             }
 
             if (Application.isPlaying)
