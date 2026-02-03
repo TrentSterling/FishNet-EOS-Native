@@ -246,20 +246,21 @@ var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
 ```
 - Note: Clean abstraction - one options class rules them all
 
-### QuickMatch Improvements (Duck)
-- [ ] **QuickMatch by attributes** - Filter QuickMatch by lobby attributes (game mode, map, region, etc.)
-- [ ] **Attribute-based matchmaking** - Find lobbies matching specific criteria, not just "any available"
-- [ ] **Bucket-based matching** - Use EOS bucket IDs for regional/mode-based matchmaking pools
-- [ ] **Search options as optional field** - QuickMatch should accept search options parameter
-- Search methods to support:
-  - `.WithGameMode(string)` - Filter by game mode
-  - `.WithRegion(string)` - Filter by region
-  - `.WithMinPlayers(int)` - Minimum player count
-  - `.WithMaxPlayers(int)` - Maximum player count
-  - `.ExcludePassworded()` - Only show public lobbies
-  - `.ExcludeFull()` - Only show lobbies with space
-  - `.WithMaxResults(int)` - Limit result count
-- Note: Currently QuickMatch finds any lobby; should support `QuickMatchOrHostAsync(LobbyOptions)`
+### QuickMatch Improvements (Duck) ✅ DONE
+- [x] **QuickMatch by attributes** - Filter QuickMatch by lobby attributes (game mode, map, region, etc.)
+- [x] **Attribute-based matchmaking** - Find lobbies matching specific criteria, not just "any available"
+- [x] **Bucket-based matching** - Use EOS bucket IDs for regional/mode-based matchmaking pools
+- [x] **Search options as optional field** - QuickMatch accepts optional LobbySearchOptions parameter
+- Search methods supported:
+  - `.WithGameMode(string)` ✅
+  - `.WithRegion(string)` ✅
+  - `.WithMinPlayers(int)` ✅
+  - `.WithMaxPlayers(int)` ✅
+  - `.ExcludePassworded()` ✅
+  - `.ExcludeFull()` ✅
+  - `.WithMaxResults(int)` ✅
+  - `.WithBucketId(string)` ✅
+- Example: `transport.QuickMatchOrHostAsync(new LobbySearchOptions().WithGameMode("deathmatch").WithRegion("us-east"))`
 
 ### Voice Effects (Duck)
 - [x] **Doppler effect** - Exposed in EOSVoicePlayer and FishNetVoicePlayer (spatialBlend, dopplerLevel 0-5, minDistance, maxDistance, rolloffMode)

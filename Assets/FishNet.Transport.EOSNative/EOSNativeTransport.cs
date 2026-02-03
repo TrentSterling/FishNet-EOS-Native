@@ -663,17 +663,34 @@ namespace FishNet.Transport.EOSNative
         /// Quick match OR auto-host - finds any available lobby and joins, OR hosts a new one if none found.
         /// This is the recommended way to implement "Play Now" functionality.
         /// </summary>
+        /// <param name="searchOptions">Optional search filters (game mode, region, etc.). If null, finds any available lobby.</param>
         /// <returns>Result, lobby data, and whether we became the host.</returns>
-        public async Task<(Result result, LobbyData lobby, bool didHost)> QuickMatchOrHostAsync()
+        public async Task<(Result result, LobbyData lobby, bool didHost)> QuickMatchOrHostAsync(LobbySearchOptions searchOptions = null)
         {
-            var options = new LobbyCreateOptions
+            var createOptions = new LobbyCreateOptions
             {
                 MaxPlayers = _defaultMaxPlayers,
                 BucketId = _lobbyBucket,
                 JoinCode = string.IsNullOrEmpty(_defaultRoomCode) ? null : _defaultRoomCode
             };
 
-            var (result, lobby, didHost) = await LobbyManager.QuickMatchOrHostAsync(options);
+            // Copy search filters to create options for hosting fallback
+            if (searchOptions != null)
+            {
+                if (!string.IsNullOrEmpty(searchOptions.BucketId))
+                    createOptions.BucketId = searchOptions.BucketId;
+                if (searchOptions.Filters != null)
+                {
+                    if (searchOptions.Filters.TryGetValue(LobbyAttributes.GAME_MODE, out var gameMode))
+                        createOptions.GameMode = gameMode;
+                    if (searchOptions.Filters.TryGetValue(LobbyAttributes.REGION, out var region))
+                        createOptions.Region = region;
+                    if (searchOptions.Filters.TryGetValue(LobbyAttributes.MAP, out var map))
+                        createOptions.Map = map;
+                }
+            }
+
+            var (result, lobby, didHost) = await LobbyManager.QuickMatchOrHostAsync(createOptions, searchOptions);
 
             if (result == Result.Success)
             {

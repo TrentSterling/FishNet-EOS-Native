@@ -110,8 +110,17 @@ var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
 // Join
 var (result, lobby) = await transport.JoinLobbyAsync("1234");
 
-// Quick Match
+// Quick Match (any lobby)
 var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
+
+// Quick Match with filters
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
+    new LobbySearchOptions()
+        .WithGameMode("deathmatch")
+        .WithRegion("us-east")
+        .WithBucketId("v1.0.1")
+        .ExcludeFull()
+);
 
 // Leave
 await transport.LeaveLobbyAsync();
