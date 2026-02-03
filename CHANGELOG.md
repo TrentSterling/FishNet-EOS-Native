@@ -2,6 +2,35 @@
 
 All notable changes to FishNet-EOS-Native will be documented in this file.
 
+## [1.0.1] - 2026-02-03 - Auto-Migration & Documentation
+
+### Added
+- **Auto-Migration System** - All NetworkObjects now automatically migrate during host migration
+  - `DoNotMigrate` component to opt-out specific objects from migration
+  - HostMigrationManager auto-tracks all spawned NetworkObjects
+  - SyncVar data captured via reflection for all objects (not just HostMigratable)
+  - `HostMigratable` component now optional (for backwards compatibility and advanced features)
+- **3D Spatial Audio Documentation** - Added docs for SpatialBlend, DopplerLevel, distance rolloff
+
+### Changed
+- **BREAKING: Migration behavior inverted** - Objects now migrate by default (was opt-in)
+  - Before: Add `HostMigratable` to opt-in
+  - After: Add `DoNotMigrate` to opt-out
+- Updated docs/migration.md with new usage patterns
+- Updated ROADMAP.md with community-requested features (Duck's suggestions)
+- Updated TODO.md with completed migration flip and new community requests
+
+### Community Requests Logged (Duck)
+- Voice logging for replay playback
+- PlayFab/LootLocker optional integrations
+- Device bans via Meta attestation
+- Cross-provider identity integration
+- Unified LobbyOptions API with BucketId
+- QuickMatch by attributes
+- Configurable lobby codes
+
+---
+
 ## [1.0.0] - 2026-02-02 - Production Ready Release
 
 ### Added
