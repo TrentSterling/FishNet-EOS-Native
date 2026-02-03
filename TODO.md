@@ -209,6 +209,12 @@ Current development tasks for FishNet-EOS-Native.
 ### Documentation Improvements (Duck)
 - [ ] **Improve host migration callbacks docs** - Make OnMigrationStarted/OnMigrationCompleted more prominent and add use case examples
 
+### Host Migration UX Flip (Duck) ⭐ HIGH PRIORITY
+- [ ] **Invert migration opt-in to opt-out** - Currently devs add `HostMigratable` to opt-in; flip it so everything migrates by default
+- [ ] **Create `DoNotMigrate` component** - Add component to exclude specific objects from migration (like `DoNotPool` pattern)
+- [ ] **Auto-migrate all NetworkObjects** - Transport automatically handles migration for everything unless excluded
+- Note: Mirror EOS transport does it this way - "automatically migrates everything and there's a component to exclude it from migration"
+
 ### Auto-Install Dependencies (Duck)
 - [ ] **Auto-install EOS SDK** - Detect if EOS SDK is missing and offer to install via Package Manager
 - [ ] **Auto-install FishNet** - Detect if FishNet is missing and offer to install via Package Manager
