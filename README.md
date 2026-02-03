@@ -169,6 +169,8 @@ var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
 
 ## Documentation
 
+**[📖 Full Documentation](https://tront.xyz/FishNet-EOS-Native/)** - Searchable docs with examples
+
 - [CLAUDE.md](CLAUDE.md) - Architecture reference and API guide
 - [CLASSES.md](CLASSES.md) - Class architecture and detailed API
 - [CHANGELOG.md](CHANGELOG.md) - Version history

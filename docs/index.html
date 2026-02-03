@@ -6,36 +6,441 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
   <meta name="description" content="Standalone Transport for FishNet using Epic Online Services (EOS) directly via raw C# SDK">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/dark.css">
   <style>
     :root {
-      --theme-color: #42b983;
+      /* Tront color palette */
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --bg-code: #1a1f26;
+
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+
+      --accent: #FF5733;
+      --accent-light: #ff7b5a;
+      --accent-glow: rgba(255, 87, 51, 0.35);
+
+      --link: #58a6ff;
+      --link-hover: #79b8ff;
+
+      --border: #30363d;
+      --border-light: #3d444d;
+
+      /* Docsify overrides */
+      --theme-color: #FF5733;
       --sidebar-width: 280px;
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    /* Sidebar */
     .sidebar {
-      background-color: #1e1e1e;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
     }
-    .markdown-section code {
-      background-color: #2d2d2d;
-      color: #e6e6e6;
+
+    .sidebar-nav {
+      padding: 1rem 0;
     }
-    .markdown-section pre>code {
-      background-color: #1e1e1e;
+
+    .sidebar-nav ul {
+      margin: 0;
+      padding: 0;
     }
-    .app-name-link img {
-      max-width: 100px;
+
+    .sidebar-nav li {
+      margin: 0;
     }
-    /* Table styling */
-    .markdown-section table {
-      display: table;
+
+    .sidebar-nav li > a {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      padding: 0.5rem 1.5rem;
+      display: block;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-nav li > a:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+      border-left-color: var(--accent);
+    }
+
+    .sidebar-nav li.active > a {
+      color: var(--accent);
+      background: rgba(255, 87, 51, 0.1);
+      border-left-color: var(--accent);
+      font-weight: 500;
+    }
+
+    .sidebar-nav li > p {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 1.5rem 1.5rem 0.5rem;
+      margin: 0;
+    }
+
+    .sidebar ul li ul {
+      padding-left: 0;
+    }
+
+    .sidebar ul li ul li a {
+      padding-left: 2rem;
+      font-size: 0.85rem;
+    }
+
+    /* App name / logo */
+    .app-name-link {
+      color: var(--text-primary) !important;
+      font-weight: 700;
+      font-size: 1.25rem;
+      padding: 1.5rem !important;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.5rem;
+    }
+
+    .app-name-link:hover {
+      color: var(--accent) !important;
+    }
+
+    /* Search */
+    .search {
+      margin: 1rem;
+      border-bottom: none;
+    }
+
+    .search input {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
       width: 100%;
+      transition: all 0.2s ease;
     }
+
+    .search input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      outline: none;
+    }
+
+    .search input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .matching-post {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 0.5rem 0;
+      padding: 0.75rem;
+    }
+
+    .matching-post a {
+      color: var(--accent) !important;
+    }
+
+    /* Main content */
+    .content {
+      background: var(--bg-primary);
+    }
+
+    .markdown-section {
+      max-width: 900px;
+      padding: 2rem 3rem;
+    }
+
+    /* Typography */
+    .markdown-section h1 {
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 2.5rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.75rem;
+      margin-top: 0;
+    }
+
+    .markdown-section h2 {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 1.75rem;
+      margin-top: 2.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .markdown-section h3 {
+      color: var(--accent-light);
+      font-weight: 600;
+      font-size: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .markdown-section h4 {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-top: 1.5rem;
+    }
+
+    .markdown-section p {
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    .markdown-section strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* Links */
+    .markdown-section a {
+      color: var(--link);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .markdown-section a:hover {
+      color: var(--link-hover);
+      text-decoration: underline;
+    }
+
+    /* Code */
+    .markdown-section code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      background: var(--bg-tertiary);
+      color: var(--accent-light);
+      padding: 0.2em 0.4em;
+      border-radius: 4px;
+      font-size: 0.875em;
+    }
+
+    .markdown-section pre {
+      background: var(--bg-code) !important;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+    }
+
+    .markdown-section pre > code {
+      background: transparent;
+      color: var(--text-primary);
+      padding: 0;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    /* Syntax highlighting adjustments */
+    .token.keyword {
+      color: #ff7b72;
+    }
+
+    .token.string {
+      color: #a5d6ff;
+    }
+
+    .token.function {
+      color: #d2a8ff;
+    }
+
+    .token.number {
+      color: #79c0ff;
+    }
+
+    .token.comment {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .token.class-name {
+      color: #7ee787;
+    }
+
+    .token.punctuation {
+      color: var(--text-secondary);
+    }
+
+    /* Tables */
+    .markdown-section table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+
     .markdown-section th {
-      background-color: #2d2d2d;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
     }
-    /* Code block headers */
-    .markdown-section pre[data-lang]::after {
-      color: #888;
+
+    .markdown-section td {
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .markdown-section tr:hover td {
+      background: rgba(255, 87, 51, 0.05);
+    }
+
+    /* Blockquotes */
+    .markdown-section blockquote {
+      border-left: 4px solid var(--accent);
+      background: rgba(255, 87, 51, 0.08);
+      margin: 1.5rem 0;
+      padding: 1rem 1.5rem;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .markdown-section blockquote p {
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    /* Lists */
+    .markdown-section ul, .markdown-section ol {
+      color: var(--text-secondary);
+      padding-left: 1.5rem;
+    }
+
+    .markdown-section li {
+      margin: 0.5rem 0;
+      line-height: 1.6;
+    }
+
+    /* Horizontal rule */
+    .markdown-section hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2rem 0;
+    }
+
+    /* Copy code button */
+    .docsify-copy-code-button {
+      background: var(--bg-tertiary) !important;
+      color: var(--text-secondary) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 4px !important;
+      font-size: 0.75rem !important;
+      padding: 0.25rem 0.5rem !important;
+    }
+
+    .docsify-copy-code-button:hover {
+      background: var(--accent) !important;
+      color: white !important;
+      border-color: var(--accent) !important;
+    }
+
+    /* Pagination */
+    .pagination-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .pagination-item:hover {
+      border-color: var(--accent);
+      background: var(--bg-tertiary);
+    }
+
+    .pagination-item-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pagination-item-title {
+      color: var(--accent) !important;
+      font-weight: 600;
+    }
+
+    /* GitHub corner */
+    .github-corner svg {
+      fill: var(--accent);
+      color: var(--bg-primary);
+    }
+
+    .github-corner:hover svg {
+      fill: var(--accent-light);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+      .markdown-section {
+        padding: 1.5rem;
+      }
+
+      .markdown-section h1 {
+        font-size: 2rem;
+      }
+
+      .markdown-section h2 {
+        font-size: 1.5rem;
+      }
+    }
+
+    /* Cover page (if used) */
+    section.cover {
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    }
+
+    section.cover .cover-main {
+      color: var(--text-primary);
+    }
+
+    section.cover a {
+      color: var(--accent);
+    }
+
+    section.cover a.anchor {
+      color: var(--link);
     }
   </style>
 </head>
@@ -55,16 +460,12 @@
       },
       copyCode: {
         buttonText: 'Copy',
-        successText: 'Copied'
+        successText: 'Copied!'
       },
       pagination: {
-        previousText: 'Previous',
-        nextText: 'Next',
+        previousText: '← Previous',
+        nextText: 'Next →',
         crossChapter: true
-      },
-      tabs: {
-        persist: true,
-        sync: true
       }
     }
   </script>
