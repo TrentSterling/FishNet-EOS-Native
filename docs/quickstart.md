@@ -1,0 +1,98 @@
+# Quick Start
+
+Get FishNet EOS Native running in your project.
+
+## Installation
+
+1. Add `EOSNativeTransport` component to a GameObject in your scene
+2. The following components are **auto-created** when you enter Play Mode:
+   - NetworkManager
+   - EOSManager
+   - EOSLobbyManager
+   - EOSVoiceManager
+   - HostMigrationManager
+3. Configure credentials via `Tools > FishNet EOS Native > Setup Wizard`
+4. Enter Play Mode → auto-initializes
+
+## Basic Usage
+
+### Hosting a Lobby
+
+```csharp
+var transport = GetComponent<EOSNativeTransport>();
+
+// Simple host (generates random 4-digit code)
+var (result, lobby) = await transport.HostLobbyAsync();
+
+// Host with specific code
+var (result, lobby) = await transport.HostLobbyAsync("1234");
+
+// Host with full options
+var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+{
+    LobbyName = "My Room",
+    GameMode = "deathmatch",
+    MaxPlayers = 8
+});
+```
+
+### Joining a Lobby
+
+```csharp
+// Join by code
+var (result, lobby) = await transport.JoinLobbyAsync("1234");
+
+// Quick match - finds a lobby or hosts one
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
+```
+
+### Leaving
+
+```csharp
+await transport.LeaveLobbyAsync();
+```
+
+### Checking State
+
+```csharp
+if (transport.IsInLobby)
+{
+    Debug.Log("Currently in a lobby");
+}
+
+if (transport.IsLobbyOwner)
+{
+    Debug.Log("I am the host");
+}
+```
+
+## Searching for Lobbies
+
+```csharp
+var options = new LobbySearchOptions()
+    .WithGameMode("ranked")
+    .WithRegion("us-east")
+    .ExcludePassworded()
+    .WithMaxResults(20);
+
+var (result, lobbies) = await transport.SearchLobbiesAsync(options);
+
+foreach (var lobby in lobbies)
+{
+    Debug.Log($"{lobby.Name} - {lobby.PlayerCount}/{lobby.MaxPlayers}");
+}
+```
+
+## Testing with ParrelSync
+
+1. Open ParrelSync window: `Tools > ParrelSync`
+2. Create a clone
+3. In Main Editor: Host a lobby
+4. In Clone: Join with the same code
+5. Both should show connected within seconds
+
+## Next Steps
+
+- [Setup Wizard](setup.md) - Configure EOS credentials
+- [Lobbies](lobbies.md) - Deep dive into lobby features
+- [Voice Chat](voice.md) - Enable voice communication
