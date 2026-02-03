@@ -177,6 +177,14 @@ if (EOSPlatformHelper.SupportsVoice)
 }
 ```
 
+## Limits
+
+| Limit | Value |
+|-------|-------|
+| Max participants | 64 per room (SDK 1.16+) |
+| Audio sample rate | 48000 Hz |
+| Audio channels | 1 (mono) |
+
 ## Debug Panel
 
 Press **F3** to open the Voice Debug Panel showing:

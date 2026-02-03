@@ -202,6 +202,8 @@ if (transport.IsLobbyOwner)
 | Max lobbies per user | 16 |
 | Create/Join rate | 30/min |
 | Attribute updates | 100/min |
+| Attribute value length | 1000 chars |
+| Voice participants | 64 (SDK 1.16+) |
 
 ## Events
 
