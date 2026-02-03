@@ -54,9 +54,9 @@ Reference for key constants and limits.
 
 | Property | Value |
 |----------|-------|
-| Length | 4 digits |
-| Characters | 0-9 |
-| Range | 0000-9999 |
+| Default | 4-digit numeric (e.g., "7294") |
+| Custom | Any string (e.g., "ABC123", "my-room") |
+| Max Length | ~256 characters (EOS limit) |
 
 ## Party Codes
 

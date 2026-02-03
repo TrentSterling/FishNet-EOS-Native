@@ -71,7 +71,7 @@ Common issues and solutions.
 - Lobby is private/hidden
 
 **Solutions**:
-1. Verify the exact 4-digit code
+1. Verify the exact lobby code (case-sensitive)
 2. Have host confirm lobby still exists
 3. Check lobby visibility settings
 
