@@ -14,7 +14,7 @@ namespace FishNet.Transport.EOSNative.Lobbies
 {
     /// <summary>
     /// Manages EOS lobby operations: create, search, join, leave.
-    /// Uses 4-digit join codes for easy sharing.
+    /// Supports custom join codes (default: 4-digit) or EOS-generated LobbyIds.
     /// </summary>
     public class EOSLobbyManager : MonoBehaviour
     {
@@ -200,21 +200,29 @@ namespace FishNet.Transport.EOSNative.Lobbies
                 return (Result.NotConfigured, default);
             }
 
-            // Generate join code if not provided
-            string joinCode = options.JoinCode ?? GenerateJoinCode();
+            // Determine join code strategy
+            bool useEosLobbyId = options.UseEosLobbyId;
+            string joinCode = null;
 
-            // Check if code is already in use
-            var (searchResult, existingLobbies) = await SearchLobbiesAsync(new LobbySearchOptions
+            if (!useEosLobbyId)
             {
-                JoinCode = joinCode,
-                MaxResults = 1
-            });
+                // Generate join code if not provided
+                joinCode = options.JoinCode ?? GenerateJoinCode();
 
-            if (searchResult == Result.Success && existingLobbies.Count > 0)
-            {
-                Debug.LogWarning($"[EOSLobbyManager] Join code {joinCode} already in use. Generating new one.");
-                joinCode = GenerateJoinCode();
+                // Check if code is already in use
+                var (searchResult, existingLobbies) = await SearchLobbiesAsync(new LobbySearchOptions
+                {
+                    JoinCode = joinCode,
+                    MaxResults = 1
+                });
+
+                if (searchResult == Result.Success && existingLobbies.Count > 0)
+                {
+                    Debug.LogWarning($"[EOSLobbyManager] Join code {joinCode} already in use. Generating new one.");
+                    joinCode = GenerateJoinCode();
+                }
             }
+            // If useEosLobbyId, joinCode stays null - we'll set it to LobbyId after creation
 
             // Note: AllowedPlatformIds requires uint[] with EOS platform constants (e.g., Common.OPT_EPIC = 100)
             // For now, we leave it null (unrestricted) - proper crossplay filtering needs platform ID mapping
@@ -262,11 +270,20 @@ namespace FishNet.Transport.EOSNative.Lobbies
             string lobbyId = result.LobbyId;
             EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", $" Lobby created: {lobbyId}");
 
-            // Set the join code attribute
-            var setCodeResult = await SetLobbyAttributeAsync(lobbyId, LobbyAttributes.JOIN_CODE, joinCode);
-            if (setCodeResult != Result.Success)
+            // If using EOS LobbyId as code, set it now
+            if (useEosLobbyId)
             {
-                Debug.LogWarning($"[EOSLobbyManager] Failed to set join code attribute: {setCodeResult}");
+                joinCode = lobbyId;
+                EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", $" Using EOS LobbyId as join code: {joinCode}");
+            }
+            else
+            {
+                // Set the join code attribute (only for custom codes)
+                var setCodeResult = await SetLobbyAttributeAsync(lobbyId, LobbyAttributes.JOIN_CODE, joinCode);
+                if (setCodeResult != Result.Success)
+                {
+                    Debug.LogWarning($"[EOSLobbyManager] Failed to set join code attribute: {setCodeResult}");
+                }
             }
 
             // Set migration support attribute
@@ -289,6 +306,7 @@ namespace FishNet.Transport.EOSNative.Lobbies
             // Get lobby details and cache
             var lobbyData = await GetLobbyDataAsync(lobbyId);
             lobbyData.JoinCode = joinCode;
+            lobbyData.IsEosLobbyIdCode = useEosLobbyId;
             CurrentLobby = lobbyData;
 
             // Subscribe to notifications
@@ -300,7 +318,7 @@ namespace FishNet.Transport.EOSNative.Lobbies
                 EOSVoiceManager.Instance?.OnLobbyCreated(lobbyId);
             }
 
-            EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", $" Lobby ready with code: {joinCode}");
+            EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", $" Lobby ready with code: {joinCode}{(useEosLobbyId ? " (EOS LobbyId)" : "")}");
             OnLobbyJoined?.Invoke(CurrentLobby);
 
             return (Result.Success, CurrentLobby);
@@ -678,10 +696,19 @@ namespace FishNet.Transport.EOSNative.Lobbies
         }
 
         /// <summary>
-        /// Searches for a lobby by its 4-digit join code.
+        /// Searches for a lobby by its join code (custom code or EOS LobbyId).
+        /// Automatically detects if the code is an EOS LobbyId and uses the appropriate search method.
         /// </summary>
         public async Task<(Result result, LobbyData? lobby)> FindLobbyByCodeAsync(string joinCode)
         {
+            // Check if this looks like an EOS LobbyId
+            if (IsEosLobbyIdFormat(joinCode))
+            {
+                EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", $" FindLobbyByCode: Detected EOS LobbyId format, searching by LobbyId");
+                return await SearchByLobbyIdAsync(joinCode);
+            }
+
+            // Standard search by JOIN_CODE attribute
             var (result, lobbies) = await SearchLobbiesAsync(new LobbySearchOptions
             {
                 JoinCode = joinCode,
@@ -700,6 +727,31 @@ namespace FishNet.Transport.EOSNative.Lobbies
             }
 
             return (Result.Success, lobbies[0]);
+        }
+
+        /// <summary>
+        /// Checks if a string appears to be an EOS LobbyId format.
+        /// EOS LobbyIds are typically 32+ character hex strings or contain specific patterns.
+        /// </summary>
+        public static bool IsEosLobbyIdFormat(string code)
+        {
+            if (string.IsNullOrEmpty(code))
+                return false;
+
+            // EOS LobbyIds are typically 32+ characters (hex or alphanumeric)
+            // Custom codes are typically shorter and simpler
+            if (code.Length >= 24)
+            {
+                // Check if it's all hex characters (typical EOS format)
+                foreach (char c in code)
+                {
+                    if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')))
+                        return false;
+                }
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -840,10 +892,19 @@ namespace FishNet.Transport.EOSNative.Lobbies
         #region Public API - Join
 
         /// <summary>
-        /// Joins a lobby by its 4-digit join code.
+        /// Joins a lobby by its join code (custom code or EOS LobbyId).
+        /// Automatically detects if the code is an EOS LobbyId and uses direct join.
         /// </summary>
         public async Task<(Result result, LobbyData lobby)> JoinLobbyByCodeAsync(string joinCode)
         {
+            // If it looks like an EOS LobbyId, try direct join first (faster)
+            if (IsEosLobbyIdFormat(joinCode))
+            {
+                EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", $" JoinByCode: Detected EOS LobbyId format, joining directly");
+                return await JoinLobbyByIdAsync(joinCode);
+            }
+
+            // Standard flow: search by attribute, then join
             var (findResult, lobbyData) = await FindLobbyByCodeAsync(joinCode);
 
             if (findResult != Result.Success || !lobbyData.HasValue)

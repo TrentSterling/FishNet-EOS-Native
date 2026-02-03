@@ -18,9 +18,14 @@ namespace FishNet.Transport.EOSNative.Lobbies
         public string LobbyId;
 
         /// <summary>
-        /// Our custom 4-digit join code.
+        /// The join code for this lobby (custom code or EOS LobbyId).
         /// </summary>
         public string JoinCode;
+
+        /// <summary>
+        /// Whether JoinCode is the EOS LobbyId (true) or a custom code (false).
+        /// </summary>
+        public bool IsEosLobbyIdCode;
 
         /// <summary>
         /// The lobby owner's ProductUserId.
@@ -225,9 +230,18 @@ namespace FishNet.Transport.EOSNative.Lobbies
         public string BucketId = "v1";
 
         /// <summary>
-        /// Custom 4-digit join code. If null, one will be generated.
+        /// Custom join code. If null, a random 4-digit code is generated.
+        /// Can be any string (e.g., "1234", "ABC123", "my-room").
         /// </summary>
         public string JoinCode = null;
+
+        /// <summary>
+        /// Use the EOS-generated LobbyId as the join code instead of a custom code.
+        /// When true, JoinCode is ignored and the unique EOS LobbyId becomes the code.
+        /// Benefits: Guaranteed unique, no code collisions, better for chat history.
+        /// Tradeoff: Long string (not human-friendly for verbal sharing).
+        /// </summary>
+        public bool UseEosLobbyId = false;
 
         /// <summary>
         /// Whether to allow host migration (default: true).
