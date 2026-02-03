@@ -98,26 +98,209 @@ public class MyGameObject : NetworkBehaviour
 - `LoadState` property to detect migration spawns
 - Owner PUID tracking for repossession
 
-## Migration Events
+## Migration Events (Important!)
+
+These callbacks are **critical** for a smooth player experience. Always handle them in your game code.
+
+### Available Events
+
+| Event | When It Fires | Use For |
+|-------|---------------|---------|
+| `OnMigrationStarted` | Host disconnect detected | Pause game, show UI, disable input |
+| `OnMigrationCompleted` | New host ready, game resuming | Hide UI, resume game, re-enable input |
+| `OnMigrationFailed` | Migration couldn't complete | Show error, return to menu |
+
+### Basic Setup
 
 ```csharp
 var migration = HostMigrationManager.Instance;
 
-migration.OnMigrationStarted += () =>
-{
-    // Show "Host migrating..." UI
-};
+migration.OnMigrationStarted += OnMigrationStarted;
+migration.OnMigrationCompleted += OnMigrationCompleted;
+migration.OnMigrationFailed += OnMigrationFailed;
 
-migration.OnMigrationCompleted += (newHostPuid) =>
+void OnMigrationStarted()
 {
-    // Hide migration UI
-    Debug.Log($"New host: {newHostPuid}");
-};
+    Debug.Log("Migration started - host disconnected");
+}
 
-migration.OnMigrationFailed += (reason) =>
+void OnMigrationCompleted()
 {
-    // Handle failure (rare)
-};
+    Debug.Log("Migration complete - game resuming");
+}
+
+void OnMigrationFailed(string reason)
+{
+    Debug.LogError($"Migration failed: {reason}");
+}
+```
+
+### Use Case: Pause Gameplay During Migration
+
+```csharp
+public class GameManager : MonoBehaviour
+{
+    [SerializeField] private GameObject migrationOverlay;
+
+    private void Start()
+    {
+        var migration = HostMigrationManager.Instance;
+        migration.OnMigrationStarted += PauseGame;
+        migration.OnMigrationCompleted += ResumeGame;
+        migration.OnMigrationFailed += HandleMigrationFailure;
+    }
+
+    private void PauseGame()
+    {
+        // Freeze gameplay
+        Time.timeScale = 0f;
+
+        // Show migration UI
+        migrationOverlay.SetActive(true);
+
+        // Disable player input
+        PlayerInput.DisableAll();
+    }
+
+    private void ResumeGame()
+    {
+        // Resume gameplay
+        Time.timeScale = 1f;
+
+        // Hide migration UI
+        migrationOverlay.SetActive(false);
+
+        // Re-enable player input
+        PlayerInput.EnableAll();
+    }
+
+    private void HandleMigrationFailure(string reason)
+    {
+        Time.timeScale = 1f;
+        migrationOverlay.SetActive(false);
+
+        // Show error and return to menu
+        ErrorUI.Show($"Connection lost: {reason}");
+        SceneManager.LoadScene("MainMenu");
+    }
+}
+```
+
+### Use Case: Save Custom State Before Migration
+
+```csharp
+public class MatchManager : MonoBehaviour
+{
+    private int _currentRound;
+    private float _matchTimer;
+    private Dictionary<string, int> _playerScores = new();
+
+    private void Start()
+    {
+        var migration = HostMigrationManager.Instance;
+        migration.OnMigrationStarted += SaveMatchState;
+        migration.OnMigrationCompleted += RestoreMatchState;
+    }
+
+    private void SaveMatchState()
+    {
+        // Save to lobby attributes (survives migration)
+        var lobby = EOSLobbyManager.Instance;
+        lobby.SetAttribute("round", _currentRound);
+        lobby.SetAttribute("timer", _matchTimer);
+        lobby.SetAttribute("scores", JsonUtility.ToJson(_playerScores));
+    }
+
+    private void RestoreMatchState()
+    {
+        // Restore from lobby attributes
+        var lobby = EOSLobbyManager.Instance;
+        _currentRound = lobby.GetAttribute<int>("round");
+        _matchTimer = lobby.GetAttribute<float>("timer");
+
+        var scoresJson = lobby.GetAttribute<string>("scores");
+        if (!string.IsNullOrEmpty(scoresJson))
+            _playerScores = JsonUtility.FromJson<Dictionary<string, int>>(scoresJson);
+    }
+}
+```
+
+### Use Case: Countdown Timer UI
+
+```csharp
+public class MigrationUI : MonoBehaviour
+{
+    [SerializeField] private GameObject panel;
+    [SerializeField] private TMP_Text statusText;
+    [SerializeField] private TMP_Text countdownText;
+
+    private float _migrationStartTime;
+    private bool _isMigrating;
+
+    private void Start()
+    {
+        var migration = HostMigrationManager.Instance;
+        migration.OnMigrationStarted += ShowMigrationUI;
+        migration.OnMigrationCompleted += HideMigrationUI;
+    }
+
+    private void ShowMigrationUI()
+    {
+        panel.SetActive(true);
+        statusText.text = "Host disconnected\nFinding new host...";
+        _migrationStartTime = Time.unscaledTime;
+        _isMigrating = true;
+    }
+
+    private void HideMigrationUI()
+    {
+        panel.SetActive(false);
+        _isMigrating = false;
+    }
+
+    private void Update()
+    {
+        if (!_isMigrating) return;
+
+        float elapsed = Time.unscaledTime - _migrationStartTime;
+        float timeout = HostMigrationManager.Instance.MigrationTimeout;
+        float remaining = timeout - elapsed;
+
+        countdownText.text = $"Timeout in {remaining:F0}s";
+    }
+}
+```
+
+### Use Case: Audio Handling
+
+```csharp
+public class AudioManager : MonoBehaviour
+{
+    private void Start()
+    {
+        var migration = HostMigrationManager.Instance;
+        migration.OnMigrationStarted += OnMigrationStarted;
+        migration.OnMigrationCompleted += OnMigrationCompleted;
+    }
+
+    private void OnMigrationStarted()
+    {
+        // Mute game audio but keep voice chat
+        AudioListener.volume = 0f;
+
+        // Play migration sound effect
+        PlaySound("host_disconnected");
+    }
+
+    private void OnMigrationCompleted()
+    {
+        // Restore game audio
+        AudioListener.volume = 1f;
+
+        // Play reconnected sound
+        PlaySound("reconnected");
+    }
+}
 ```
 
 ## Player Spawner Integration

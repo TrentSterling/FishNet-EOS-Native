@@ -207,7 +207,7 @@ Current development tasks for FishNet-EOS-Native.
 ## Community Requests (Discord)
 
 ### Documentation Improvements (Duck)
-- [ ] **Improve host migration callbacks docs** - Make OnMigrationStarted/OnMigrationCompleted more prominent and add use case examples
+- [x] **Improve host migration callbacks docs** - Make OnMigrationStarted/OnMigrationCompleted more prominent and add use case examples
 
 ### Host Migration UX Flip (Duck) ⭐ DONE
 - [x] **Invert migration opt-in to opt-out** - Everything migrates by default now
@@ -220,11 +220,12 @@ Current development tasks for FishNet-EOS-Native.
 - [ ] **Auto-install FishNet** - Detect if FishNet is missing and offer to install via Package Manager
 - Note: Would make setup truly zero-friction - just import the transport and everything else gets pulled in automatically
 
-### Lobby Code Flexibility (Duck)
-- [ ] **Configurable lobby code format** - Not limited to 4-digit codes, allow any string
+### Lobby Code Flexibility (Duck) ✅ DONE
+- [x] **Configurable lobby code format** - Not limited to 4-digit codes, allow any string
+- [x] **Documentation updated** - All docs now clarify codes can be any string
 - [ ] **EOS token codes** - Option to use EOS-generated tokens (long random strings) as lobby identifiers
 - [ ] **Name search via attributes** - Search lobbies by name attribute instead of just code
-- Note: Make code format configurable (4-digit, 6-char alphanumeric, EOS token, custom)
+- Note: Code flexibility already implemented - just needed doc updates
 
 ### Unified LobbyOptions API (Duck)
 - [ ] **Single `LobbyOptions` class** - Unified options for host, join, quickmatch (like Fusion's approach)
