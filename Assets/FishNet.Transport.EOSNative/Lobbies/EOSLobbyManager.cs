@@ -757,20 +757,45 @@ namespace FishNet.Transport.EOSNative.Lobbies
         /// This is the recommended way to implement "Play Now" functionality.
         /// </summary>
         /// <param name="hostOptions">Options to use if hosting is needed. If null, uses defaults.</param>
+        /// <param name="searchOptions">Search filters (game mode, region, etc.). If null, finds any available lobby.</param>
         /// <returns>Result, lobby data, and whether we became the host.</returns>
-        public async Task<(Result result, LobbyData lobby, bool didHost)> QuickMatchOrHostAsync(LobbyCreateOptions hostOptions = null)
+        public async Task<(Result result, LobbyData lobby, bool didHost)> QuickMatchOrHostAsync(
+            LobbyCreateOptions hostOptions = null,
+            LobbySearchOptions searchOptions = null)
         {
+            // Build search options - use provided or default to QuickMatch
+            var effectiveSearchOptions = searchOptions ?? LobbySearchOptions.QuickMatch();
+
+            // Ensure we exclude full/passworded/in-progress for quick match
+            effectiveSearchOptions.OnlyAvailable = true;
+            effectiveSearchOptions.ExcludePasswordProtected = true;
+            effectiveSearchOptions.ExcludeInProgress = true;
+
             // First try to find a lobby
-            var (searchResult, lobbies) = await SearchLobbiesAsync(LobbySearchOptions.QuickMatch());
+            var (searchResult, lobbies) = await SearchLobbiesAsync(effectiveSearchOptions);
 
             if (searchResult == Result.Success && lobbies != null && lobbies.Count > 0)
             {
-                // Found lobbies - join random one
-                var random = new System.Random();
-                var selectedLobby = lobbies[random.Next(lobbies.Count)];
-                EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", $" QuickMatchOrHost: Found {lobbies.Count} lobbies, joining {selectedLobby.JoinCode}");
-                var (joinResult, lobby) = await JoinLobbyByIdAsync(selectedLobby.LobbyId);
-                return (joinResult, lobby, false); // didHost = false
+                // Filter by min/max players if specified
+                if (searchOptions?.MinPlayersFilter.HasValue == true || searchOptions?.MaxPlayersFilter.HasValue == true)
+                {
+                    lobbies = lobbies.FindAll(l =>
+                    {
+                        bool passesMin = !searchOptions.MinPlayersFilter.HasValue || l.MemberCount >= searchOptions.MinPlayersFilter.Value;
+                        bool passesMax = !searchOptions.MaxPlayersFilter.HasValue || l.MaxMembers <= searchOptions.MaxPlayersFilter.Value;
+                        return passesMin && passesMax;
+                    });
+                }
+
+                if (lobbies.Count > 0)
+                {
+                    // Found lobbies - join random one
+                    var random = new System.Random();
+                    var selectedLobby = lobbies[random.Next(lobbies.Count)];
+                    EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", $" QuickMatchOrHost: Found {lobbies.Count} lobbies, joining {selectedLobby.JoinCode}");
+                    var (joinResult, lobby) = await JoinLobbyByIdAsync(selectedLobby.LobbyId);
+                    return (joinResult, lobby, false); // didHost = false
+                }
             }
 
             // No lobbies found - create and host one

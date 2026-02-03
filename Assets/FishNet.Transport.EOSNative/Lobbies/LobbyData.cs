@@ -361,6 +361,26 @@ namespace FishNet.Transport.EOSNative.Lobbies
         public string JoinCode = null;
 
         /// <summary>
+        /// Minimum number of players in lobby (for filtering).
+        /// </summary>
+        internal int? _minPlayers = null;
+
+        /// <summary>
+        /// Maximum player capacity filter (lobby max members).
+        /// </summary>
+        internal int? _maxPlayers = null;
+
+        /// <summary>
+        /// Minimum players filter value.
+        /// </summary>
+        public int? MinPlayersFilter => _minPlayers;
+
+        /// <summary>
+        /// Maximum players filter value.
+        /// </summary>
+        public int? MaxPlayersFilter => _maxPlayers;
+
+        /// <summary>
         /// Version bucket to filter by. Must match for lobby to appear.
         /// </summary>
         public string BucketId = null;
@@ -463,6 +483,43 @@ namespace FishNet.Transport.EOSNative.Lobbies
         public LobbySearchOptions WithBucket(string bucketId)
         {
             BucketId = bucketId;
+            return this;
+        }
+
+        /// <summary>
+        /// Filter by EOS bucket ID (alias for WithBucket).
+        /// Use for version/platform filtering.
+        /// </summary>
+        public LobbySearchOptions WithBucketId(string bucketId)
+        {
+            BucketId = bucketId;
+            return this;
+        }
+
+        /// <summary>
+        /// Filter by minimum player count in lobby.
+        /// </summary>
+        public LobbySearchOptions WithMinPlayers(int minPlayers)
+        {
+            _minPlayers = minPlayers;
+            return this;
+        }
+
+        /// <summary>
+        /// Filter by maximum player count (lobby max members).
+        /// </summary>
+        public LobbySearchOptions WithMaxPlayers(int maxPlayers)
+        {
+            _maxPlayers = maxPlayers;
+            return this;
+        }
+
+        /// <summary>
+        /// Exclude full lobbies (alias for OnlyWithAvailableSlots).
+        /// </summary>
+        public LobbySearchOptions ExcludeFull()
+        {
+            OnlyAvailable = true;
             return this;
         }
 
