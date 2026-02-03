@@ -9,7 +9,7 @@
 - **Lobbies** - 4-digit codes, search, custom attributes, max 64 players
 - **Voice Chat** - Built-in RTC with pitch shifting and per-player controls
 - **Text Chat** - Lobby-based chat with cloud-persisted history
-- **Host Migration** - Seamless handoff when host disconnects
+- **Host Migration** - Automatic migration for all objects (opt-out with DoNotMigrate)
 - **Party System** - Persistent groups with follow-the-leader mechanics
 - **Ranked Matchmaking** - ELO/Glicko-2 skill-based matchmaking with tiers
 - **Replay System** - Record and playback games with timeline controls

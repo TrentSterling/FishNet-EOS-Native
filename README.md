@@ -28,8 +28,10 @@ Existing EOS transports for FishNet depend on the [PlayEveryWare EOS Plugin](htt
 - **Voice Survives Migration** - Lobby-based, not P2P-based
 
 ### Host Migration
+- **Auto-Migration by Default** - All NetworkObjects migrate automatically
+- **Opt-Out with DoNotMigrate** - Exclude specific objects from migration
 - **Automatic Promotion** - EOS handles host selection
-- **State Persistence** - SyncVars saved and restored
+- **State Persistence** - SyncVars saved and restored via reflection
 - **Player Repossession** - Objects returned to original owners
 
 ### Social & Services

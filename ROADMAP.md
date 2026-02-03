@@ -108,6 +108,7 @@ EOS Lobby (persistent layer)
 | Ranked Matchmaking | ✅ Done | v1.0.0 |
 | Replay System | ✅ Done | v1.0.0 |
 | Anti-Cheat (EAC) | ✅ Done | v1.0.0 |
+| Auto-Migration (DoNotMigrate opt-out) | ✅ Done | v1.0.1 |
 
 ---
 
