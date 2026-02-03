@@ -289,23 +289,36 @@
       font-size: 0.9rem;
     }
 
+    .markdown-section thead tr {
+      background: var(--bg-tertiary) !important;
+    }
+
     .markdown-section th {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
+      background: var(--bg-tertiary) !important;
+      color: var(--text-primary) !important;
       font-weight: 600;
       text-align: left;
       padding: 0.75rem 1rem;
       border: 1px solid var(--border);
     }
 
+    .markdown-section tbody tr {
+      background: var(--bg-primary) !important;
+    }
+
+    .markdown-section tbody tr:nth-child(even) {
+      background: var(--bg-secondary) !important;
+    }
+
     .markdown-section td {
       padding: 0.75rem 1rem;
       border: 1px solid var(--border);
-      color: var(--text-secondary);
+      color: var(--text-secondary) !important;
+      background: transparent !important;
     }
 
     .markdown-section tr:hover td {
-      background: rgba(255, 87, 51, 0.05);
+      background: rgba(255, 87, 51, 0.1) !important;
     }
 
     /* Blockquotes */
