@@ -58,6 +58,32 @@ var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
 });
 ```
 
+### With EOS LobbyId as Code
+
+Use the EOS-generated LobbyId instead of a custom code. This guarantees uniqueness - useful for features like chat history that key off the lobby code.
+
+```csharp
+var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+{
+    UseEosLobbyId = true,  // Use EOS-generated ID as the code
+    LobbyName = "My Room",
+    GameMode = "casual"
+});
+
+// lobby.JoinCode will be something like "a1b2c3d4e5f67890abcdef12"
+// lobby.IsEosLobbyIdCode will be true
+```
+
+**When to use EOS LobbyId:**
+- Chat history (no collisions with reused 4-digit codes)
+- Invite links / deep links (not shared verbally)
+- Internal systems that don't need human-readable codes
+
+**When to use custom codes:**
+- Verbal sharing ("Join lobby 1234!")
+- Simple UI display
+- Human-memorable codes
+
 ## Joining a Lobby
 
 ### By Code

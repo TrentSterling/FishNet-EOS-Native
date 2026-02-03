@@ -109,6 +109,12 @@ var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
     LobbyName = "My Room", GameMode = "deathmatch", MaxPlayers = 8
 });
 
+// Host with EOS LobbyId as code (guaranteed unique, good for chat history)
+var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+{
+    UseEosLobbyId = true  // Code will be EOS-generated ID
+});
+
 // Join
 var (result, lobby) = await transport.JoinLobbyAsync("1234");
 

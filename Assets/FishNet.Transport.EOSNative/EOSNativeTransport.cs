@@ -80,7 +80,7 @@ namespace FishNet.Transport.EOSNative
         private string _lobbyBucket = "v1";
 
         [SerializeField]
-        [Tooltip("Default room code used when hosting. If empty, a random 4-digit code is generated.")]
+        [Tooltip("Default room code used when hosting. If empty, a random 4-digit code is generated. Can be any string.")]
         private string _defaultRoomCode = "";
 
         [Header("Heartbeat Settings")]
@@ -543,7 +543,7 @@ namespace FishNet.Transport.EOSNative
         /// HOST MODE: Creates a lobby and starts hosting (server + clienthost).
         /// This is the primary way to start a session.
         /// </summary>
-        /// <param name="roomCode">4-digit room code. If null/empty, uses DefaultRoomCode or generates random.</param>
+        /// <param name="roomCode">Join code (any string). If null/empty, uses DefaultRoomCode or generates random 4-digit code.</param>
         /// <returns>Result and lobby data with the room code.</returns>
         public async Task<(Result result, LobbyData lobby)> HostLobbyAsync(string roomCode = null)
         {
@@ -593,8 +593,9 @@ namespace FishNet.Transport.EOSNative
         /// <summary>
         /// CLIENT MODE: Joins a lobby by room code.
         /// By default, auto-connects to the host after joining.
+        /// Automatically detects if the code is an EOS LobbyId and uses direct join.
         /// </summary>
-        /// <param name="roomCode">The 4-digit room code to join.</param>
+        /// <param name="roomCode">The join code (custom code or EOS LobbyId).</param>
         /// <param name="autoConnect">If true (default), automatically connects to the host. If false, just joins the lobby.</param>
         /// <returns>Result and lobby data.</returns>
         public async Task<(Result result, LobbyData lobby)> JoinLobbyAsync(string roomCode, bool autoConnect = true)
