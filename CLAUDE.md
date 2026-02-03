@@ -74,7 +74,7 @@ Assets/FishNet.Transport.EOSNative/
 │
 ├── Lobbies/ (3 files) - EOSLobbyManager, EOSLobbyChatManager, LobbyData
 ├── Voice/ (3 files) - EOSVoiceManager, EOSVoicePlayer, FishNetVoicePlayer
-├── Migration/ (4 files) - HostMigratable, HostMigrationManager, HostMigrationPlayerSpawner, HostMigrationTester
+├── Migration/ (5 files) - HostMigratable, HostMigrationManager, HostMigrationPlayerSpawner, HostMigrationTester, DoNotMigrate
 ├── Social/ (10 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData
 ├── Storage/ (2 files) - EOSPlayerDataStorage, EOSTitleStorage
 ├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
@@ -654,7 +654,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - Packet Fragmentation, Fast Disconnect
 - Voice/RTC with Pitch Shifting (SMBPitchShifter) and 3D Spatial Audio (SpatialBlend, DopplerLevel)
 - Text Chat (lobby-based, survives migration)
-- Host Migration Framework (scene object reset, player repossession)
+- Host Migration Framework (auto-migration by default, DoNotMigrate opt-out, scene object reset, player repossession)
 - Cloud Storage, Stats, Leaderboards, Achievements
 - Friends, Presence, CustomInvites
 - Reports, Sanctions, Metrics

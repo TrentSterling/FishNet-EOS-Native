@@ -115,10 +115,11 @@ namespace FishNet.Transport.EOSNative.Migration
                 return;
             }
 
-            // Check for migrated objects waiting for this owner
+            // Check for legacy migrated objects (HostMigratable) waiting for this owner
+            bool hadLegacyRepossessions = false;
             if (HostMigratable.PendingRepossessions.TryGetValue(ownerPuid, out var migratedObjects))
             {
-                Log($"Repossessing {migratedObjects.Count} objects for {ownerPuid.Substring(0, 8)}...");
+                Log($"Repossessing {migratedObjects.Count} legacy objects for {ownerPuid.Substring(0, 8)}...");
 
                 foreach (var migratable in migratedObjects)
                 {
@@ -140,8 +141,39 @@ namespace FishNet.Transport.EOSNative.Migration
 
                 // Remove from pending
                 HostMigratable.PendingRepossessions.Remove(ownerPuid);
+                hadLegacyRepossessions = true;
+            }
 
-                // Don't spawn a new player - they got their old objects back
+            // Check for auto-tracked objects (no HostMigratable) waiting for this owner
+            bool hadAutoRepossessions = false;
+            var autoObjects = HostMigrationManager.Instance?.GetPendingAutoRepossessions(ownerPuid);
+            if (autoObjects != null && autoObjects.Count > 0)
+            {
+                Log($"Repossessing {autoObjects.Count} auto-tracked objects for {ownerPuid.Substring(0, 8)}...");
+
+                foreach (var nob in autoObjects)
+                {
+                    if (nob == null) continue;
+
+                    // Activate and give ownership
+                    nob.gameObject.SetActive(true);
+                    nob.GiveOwnership(conn);
+
+                    // Add to default scene
+                    if (_addToDefaultScene)
+                    {
+                        InstanceFinder.SceneManager.AddOwnerToDefaultScene(nob);
+                    }
+                }
+
+                // Clear from pending
+                HostMigrationManager.Instance.ClearPendingAutoRepossessions(ownerPuid);
+                hadAutoRepossessions = true;
+            }
+
+            // If any repossessions occurred, don't spawn new player
+            if (hadLegacyRepossessions || hadAutoRepossessions)
+            {
                 return;
             }
 
