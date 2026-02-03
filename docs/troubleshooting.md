@@ -61,7 +61,7 @@ Common issues and solutions.
 **Solutions**:
 1. Wait and retry
 2. Leave other lobbies first
-3. Check attribute key/value lengths (64/256 char max)
+3. Check attribute key/value lengths (64/1000 char max)
 
 ### "Lobby code not found"
 

@@ -24,7 +24,9 @@ Reference for key constants and limits.
 | Create/Join rate | 30/min |
 | Attribute updates | 100/min |
 | Max attribute key length | 64 chars |
-| Max attribute value length | 256 chars |
+| Max attribute value length | 1000 chars |
+| Max session attributes | 100 |
+| Max member attributes | 100 |
 
 ### Stats & Leaderboards
 
@@ -46,7 +48,7 @@ Reference for key constants and limits.
 
 | Limit | Value |
 |-------|-------|
-| Max participants | 16 per room |
+| Max participants | 64 per room (SDK 1.16+) |
 | Audio sample rate | 48000 Hz |
 | Audio channels | 1 (mono) |
 
