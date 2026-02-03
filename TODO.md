@@ -228,15 +228,37 @@ Current development tasks for FishNet-EOS-Native.
 
 ### Unified LobbyOptions API (Duck)
 - [ ] **Single `LobbyOptions` class** - Unified options for host, join, quickmatch (like Fusion's approach)
-- [ ] **BucketId field** - Add bucket ID support for lobby grouping/filtering
+- [ ] **BucketId field** - Add bucket ID support for lobby grouping/filtering (version, platform, etc.)
 - [ ] **Fluent builder pattern** - `new LobbyOptions().WithGameMode("ranked").WithBucketId("us-east")`
 - [ ] **Apply to all methods** - `HostLobbyAsync(options)`, `JoinLobbyAsync(code, options)`, `QuickMatchOrHostAsync(options)`
+- Example from Duck:
+```csharp
+var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+{
+    LobbyName = "Pro Players Only",
+    GameMode = "competitive",
+    Region = "us-east",
+    MaxPlayers = 8,
+    Password = "secret123",
+    IsPublic = true,
+    BucketId = "v1.0.1"  // Could be version or platform
+});
+```
 - Note: Clean abstraction - one options class rules them all
 
 ### QuickMatch Improvements (Duck)
 - [ ] **QuickMatch by attributes** - Filter QuickMatch by lobby attributes (game mode, map, region, etc.)
 - [ ] **Attribute-based matchmaking** - Find lobbies matching specific criteria, not just "any available"
 - [ ] **Bucket-based matching** - Use EOS bucket IDs for regional/mode-based matchmaking pools
+- [ ] **Search options as optional field** - QuickMatch should accept search options parameter
+- Search methods to support:
+  - `.WithGameMode(string)` - Filter by game mode
+  - `.WithRegion(string)` - Filter by region
+  - `.WithMinPlayers(int)` - Minimum player count
+  - `.WithMaxPlayers(int)` - Maximum player count
+  - `.ExcludePassworded()` - Only show public lobbies
+  - `.ExcludeFull()` - Only show lobbies with space
+  - `.WithMaxResults(int)` - Limit result count
 - Note: Currently QuickMatch finds any lobby; should support `QuickMatchOrHostAsync(LobbyOptions)`
 
 ### Voice Effects (Duck)
