@@ -11,6 +11,7 @@
   * [Text Chat](chat.md)
   * [Global Chat Channels](globalchat.md)
   * [Ping & Callouts](pings.md)
+  * [Backfill & JIP](backfill.md)
   * [Host Migration](migration.md)
   * [Vote Kick](votekick.md)
   * [Map/Mode Voting](mapvote.md)
