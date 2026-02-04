@@ -227,23 +227,24 @@ Current development tasks for FishNet-EOS-Native.
 - [x] **Name search via attributes** - `SearchLobbiesByNameAsync()`, `JoinLobbyByNameAsync()`
 - Note: EOS LobbyId is auto-detected on join - works seamlessly with custom codes
 
-### Unified LobbyOptions API (Duck) - Phase 1 Done
-- [ ] **Single `LobbyOptions` class** - Unified options for host, join, quickmatch (future Phase 2)
+### Unified LobbyOptions API (Duck) ✅ DONE
+- [x] **Single `LobbyOptions` class** - Unified options for host, join, quickmatch
 - [x] **BucketId field** - Already exists in LobbyCreateOptions
-- [x] **Fluent builder pattern** - Added to LobbyCreateOptions (matches LobbySearchOptions style)
+- [x] **Fluent builder pattern** - Added to LobbyCreateOptions and LobbyOptions
 - [x] **Apply to all methods** - LobbyCreateOptions for host, LobbySearchOptions for search/join
-- Example from Duck:
+- [x] **Implicit conversion** - LobbyOptions auto-converts to LobbyCreateOptions or LobbySearchOptions
+- Example:
 ```csharp
-var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+// One options class works for both hosting and quick matching
+var options = new LobbyOptions
 {
     LobbyName = "Pro Players Only",
     GameMode = "competitive",
     Region = "us-east",
-    MaxPlayers = 8,
-    Password = "secret123",
-    IsPublic = true,
-    BucketId = "v1.0.1"  // Could be version or platform
-});
+    MaxPlayers = 8
+};
+var (result, lobby) = await transport.HostLobbyAsync(options);
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(options);
 ```
 - Note: Clean abstraction - one options class rules them all
 
