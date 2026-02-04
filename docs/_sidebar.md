@@ -16,6 +16,7 @@
 * **Social**
   * [Friends System](friends.md)
   * [Party System](party.md)
+  * [LFG (Looking for Group)](lfg.md)
   * [Invites & Presence](invites.md)
   * [Platform Detection](platforms.md)
 
