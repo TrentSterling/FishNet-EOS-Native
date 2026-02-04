@@ -31,6 +31,7 @@
   * [Input-Based Matchmaking](inputmatchmaking.md)
   * [Tournament Brackets](tournaments.md)
   * [Match History](match-history.md)
+  * [Match Rematch](rematch.md)
   * [Leaderboards & Stats](leaderboards.md)
 
 * **Replay System**

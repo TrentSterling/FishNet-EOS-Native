@@ -75,7 +75,7 @@ Assets/FishNet.Transport.EOSNative/
 │   ├── DebugUI/EOSNetworkDebugPanel.cs    # F4
 │   └── EOSNetworkPlayer.cs
 │
-├── Lobbies/ (4 files) - EOSLobbyManager, EOSLobbyChatManager, LobbyData, EOSBackfillManager
+├── Lobbies/ (5 files) - EOSLobbyManager, EOSLobbyChatManager, LobbyData, EOSBackfillManager, EOSRematchManager
 ├── Voice/ (5 files) - EOSVoiceManager, EOSVoicePlayer, FishNetVoicePlayer, EOSVoiceZoneManager, EOSVoiceTriggerZone
 ├── Migration/ (5 files) - HostMigratable, HostMigrationManager, HostMigrationPlayerSpawner, HostMigrationTester, DoNotMigrate
 ├── Social/ (17 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager, EOSTournamentManager, EOSSeasonManager, EOSClanManager, EOSGlobalChatManager, EOSReputationManager, EOSPingManager
@@ -1087,6 +1087,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Replay Highlights** - Auto-detect significant moments (multi-kills, clutches, comebacks), manual bookmarks
 - **Ping & Callout System** - World position/object pings, multiple types, team visibility, visual indicators
 - **Backfill & Join-in-Progress** - Late joiner handling, game phases, backfill requests, team balancing, spawn protection
+- **Match Rematch System** - Post-match rematch voting, host force, swap teams, consecutive limits
 
 ### Next Up
 
