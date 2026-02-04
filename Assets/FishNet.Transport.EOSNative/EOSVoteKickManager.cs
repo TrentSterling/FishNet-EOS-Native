@@ -744,6 +744,23 @@ namespace FishNet.Transport.EOSNative
             // Don't process target's "votes"
             if (memberPuid == _activeVote.TargetPuid) return;
 
+            // Security: Verify member is still in lobby (host-authority validation)
+            var lobbyManager = EOSLobbyManager.Instance;
+            if (lobbyManager != null && !lobbyManager.IsPlayerInLobby(memberPuid))
+            {
+                EOSDebugLogger.LogWarning(DebugCategory.LobbyManager, "EOSVoteKickManager",
+                    $"Rejected vote from {memberPuid}: not in lobby");
+                return;
+            }
+
+            // Security: Rate limit votes (prevent spam)
+            if (Security.SecurityValidator.IsRateLimited($"vote_{memberPuid}", 10))
+            {
+                EOSDebugLogger.LogWarning(DebugCategory.LobbyManager, "EOSVoteKickManager",
+                    $"Rejected vote from {memberPuid}: rate limited");
+                return;
+            }
+
             bool? voteValue = value?.ToLower() switch
             {
                 "yes" => true,

@@ -380,6 +380,47 @@ namespace FishNet.Transport.EOSNative.Social
         }
 
         /// <summary>
+        /// Commend a player with host-authority validation.
+        /// Use this instead of CommendPlayerAsync for secure multiplayer games.
+        /// The host validates the feedback before it's delivered.
+        /// </summary>
+        public void CommendPlayerSecure(string targetPuid, string category, string comment = null)
+        {
+            var validator = Security.HostAuthorityValidator.Instance;
+            if (validator != null)
+            {
+                validator.RequestReputationValidation(targetPuid, category, true, comment);
+            }
+            else
+            {
+                // Fallback to direct call if no validator
+                EOSDebugLogger.LogWarning("EOSReputationManager",
+                    "No HostAuthorityValidator found - using direct feedback (not secure)");
+                _ = CommendPlayerAsync(targetPuid, category, comment);
+            }
+        }
+
+        /// <summary>
+        /// Report a player with host-authority validation.
+        /// Use this instead of ReportPlayerAsync for secure multiplayer games.
+        /// The host validates the feedback before it's delivered.
+        /// </summary>
+        public void ReportPlayerSecure(string targetPuid, string category, string comment = null)
+        {
+            var validator = Security.HostAuthorityValidator.Instance;
+            if (validator != null)
+            {
+                validator.RequestReputationValidation(targetPuid, category, false, comment);
+            }
+            else
+            {
+                EOSDebugLogger.LogWarning("EOSReputationManager",
+                    "No HostAuthorityValidator found - using direct feedback (not secure)");
+                _ = ReportPlayerAsync(targetPuid, category, comment);
+            }
+        }
+
+        /// <summary>
         /// Check if can give feedback to a player.
         /// </summary>
         public bool CanGiveFeedback(string targetPuid, bool isCommend)

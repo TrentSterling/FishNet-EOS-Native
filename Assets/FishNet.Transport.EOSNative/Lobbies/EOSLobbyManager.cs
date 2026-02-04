@@ -186,6 +186,43 @@ namespace FishNet.Transport.EOSNative.Lobbies
             _joinOrder.Clear();
         }
 
+        /// <summary>
+        /// Check if a player is currently in the lobby.
+        /// </summary>
+        public bool IsPlayerInLobby(string puid)
+        {
+            if (!IsInLobby || string.IsNullOrEmpty(puid)) return false;
+
+            // Check if it's the owner
+            if (puid == CurrentLobby.OwnerPuid) return true;
+
+            // Check if it's the local player
+            if (puid == LocalPuid) return true;
+
+            // Check join order list (tracks all non-host members)
+            return _joinOrder.Contains(puid);
+        }
+
+        /// <summary>
+        /// Get all current lobby member PUIDs.
+        /// </summary>
+        public List<string> GetCurrentMembers()
+        {
+            var members = new List<string>();
+            if (!IsInLobby) return members;
+
+            // Add owner first
+            if (!string.IsNullOrEmpty(CurrentLobby.OwnerPuid))
+            {
+                members.Add(CurrentLobby.OwnerPuid);
+            }
+
+            // Add all joined members
+            members.AddRange(_joinOrder);
+
+            return members;
+        }
+
         #endregion
 
         #region Unity Lifecycle

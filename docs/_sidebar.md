@@ -41,6 +41,7 @@
   * [Highlights](highlights.md)
 
 * **Advanced**
+  * [Security Model](security.md)
   * [Anti-Cheat (EAC)](anticheat.md)
   * [Auto-Reconnect](reconnect.md)
   * [Cloud Storage](storage.md)

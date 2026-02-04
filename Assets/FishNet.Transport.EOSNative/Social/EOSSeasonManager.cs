@@ -12,6 +12,13 @@ namespace FishNet.Transport.EOSNative.Social
 {
     /// <summary>
     /// Manages competitive seasons with soft resets and rewards.
+    ///
+    /// SECURITY NOTE: Season data is stored in EOS Cloud Storage which is client-writable.
+    /// For production games with competitive seasons, implement server-side validation:
+    /// - Track ratings and rewards on a backend server
+    /// - Validate reward claims server-side
+    /// - Don't trust client-reported season progress
+    /// See SECURITY.md for the full security model.
     /// </summary>
     public class EOSSeasonManager : MonoBehaviour
     {

@@ -12,6 +12,13 @@ namespace FishNet.Transport.EOSNative.Social
 {
     /// <summary>
     /// Manages persistent clans/teams with membership, roles, and chat.
+    ///
+    /// SECURITY NOTE: Clan data is stored in EOS Cloud Storage which is client-writable.
+    /// For production games with competitive clans, implement server-side validation:
+    /// - Verify role changes through a backend server
+    /// - Validate membership changes server-side
+    /// - Store authoritative clan data on your own server
+    /// See SECURITY.md for the full security model.
     /// </summary>
     public class EOSClanManager : MonoBehaviour
     {

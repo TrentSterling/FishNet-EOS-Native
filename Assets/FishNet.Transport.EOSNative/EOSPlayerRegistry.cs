@@ -361,6 +361,17 @@ namespace FishNet.Transport.EOSNative
         }
 
         /// <summary>
+        /// Check if a player is in the current lobby.
+        /// Delegates to EOSLobbyManager.
+        /// </summary>
+        public bool IsPlayerInLobby(string puid)
+        {
+            var lobbyManager = EOSLobbyManager.Instance;
+            if (lobbyManager == null) return false;
+            return lobbyManager.IsPlayerInLobby(puid);
+        }
+
+        /// <summary>
         /// Get when a player was last seen.
         /// </summary>
         public DateTime? GetLastSeen(string puid)
