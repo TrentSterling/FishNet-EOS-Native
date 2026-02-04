@@ -305,6 +305,14 @@ string name = EOSPlayerRegistry.GetPlatformName(playerPlatform); // "Windows", "
 if (EOSPlatformHelper.IsMobile) { }
 if (EOSPlatformHelper.IsVR) { }
 if (EOSPlatformHelper.SupportsVoice) { }
+
+// Platform filtering for lobby search
+var (result, lobbies) = await transport.SearchLobbiesAsync(
+    new LobbyOptions().SamePlatformOnly()   // Same platform as host
+    // or .DesktopOnly()                     // Windows/Mac/Linux only
+    // or .MobileOnly()                      // Android/iOS/Quest only
+    // or .WithPlatformFilter("WIN")         // Specific platform
+);
 ```
 
 ### Toast Notifications
@@ -956,6 +964,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Map/Mode Voting** - End-of-match voting for next map/mode, tie breakers, timer, live results
 - **Voice Chat Zones** - Proximity, team, and custom zone-based voice chat with trigger zones
 - **LFG System** - Create/browse LFG posts, send/manage join requests, auto-expiring posts
+- **Platform Filtering** - Filter lobby searches by host platform (same, desktop, mobile, specific)
 
 ### Next Up
 

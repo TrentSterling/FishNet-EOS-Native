@@ -131,3 +131,80 @@ registry.OnPlayerPlatformDetected += (puid, platform) =>
     Debug.Log($"Player {puid} is on {platform}");
 };
 ```
+
+## Platform Filtering for Lobbies
+
+Filter lobby searches by host platform to separate player pools.
+
+### Using LobbyOptions (Unified)
+
+```csharp
+// Filter to same platform only
+var (result, lobbies) = await transport.SearchLobbiesAsync(
+    new LobbyOptions().SamePlatformOnly()
+);
+
+// Filter to desktop only
+var (result, lobbies) = await transport.SearchLobbiesAsync(
+    new LobbyOptions().DesktopOnly()
+);
+
+// Filter to mobile only (Android, iOS, Quest)
+var (result, lobbies) = await transport.SearchLobbiesAsync(
+    new LobbyOptions().MobileOnly()
+);
+
+// Filter to specific platform
+var (result, lobbies) = await transport.SearchLobbiesAsync(
+    new LobbyOptions().WithPlatformFilter("WIN")  // Windows only
+);
+```
+
+### Using LobbySearchOptions (Advanced)
+
+```csharp
+var options = new LobbySearchOptions()
+    .WithGameMode("ranked")
+    .SamePlatformOnly();  // Only lobbies hosted on same platform
+
+var options = new LobbySearchOptions()
+    .DesktopOnly();  // Windows, Mac, Linux only
+
+var options = new LobbySearchOptions()
+    .MobileOnly();  // Android, iOS, Quest only
+
+var options = new LobbySearchOptions()
+    .WithPlatform("WIN");  // Specific platform
+
+var options = new LobbySearchOptions()
+    .WithPlatform(EOSPlatformType.Android);  // Using enum
+```
+
+### Hosting with Platform Info
+
+Lobbies automatically include the host's platform ID:
+
+```csharp
+// When hosting, HOST_PLATFORM is automatically set
+var (result, lobby) = await transport.HostLobbyAsync();
+// Lobby will have HOST_PLATFORM = "WIN" (or current platform)
+```
+
+### Common Patterns
+
+```csharp
+// Competitive: Same platform only
+var ranked = new LobbyOptions()
+    .WithGameMode("ranked")
+    .SamePlatformOnly();
+
+// Casual: All platforms
+var casual = new LobbyOptions()
+    .WithGameMode("casual");
+    // No platform filter = all platforms
+
+// Input fairness: Desktop vs mobile separation
+var inputFair = new LobbyOptions()
+    .WithGameMode("deathmatch")
+    .DesktopOnly();  // or MobileOnly()
+```
