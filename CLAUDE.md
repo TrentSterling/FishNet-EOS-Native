@@ -81,7 +81,7 @@ Assets/FishNet.Transport.EOSNative/
 ├── Social/ (16 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager, EOSTournamentManager, EOSSeasonManager, EOSClanManager, EOSGlobalChatManager, EOSReputationManager
 ├── Storage/ (2 files) - EOSPlayerDataStorage, EOSTitleStorage
 ├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
-├── Replay/ (11 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings, EOSReplayVoiceRecorder, EOSReplayVoicePlayer
+├── Replay/ (12 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings, EOSReplayVoiceRecorder, EOSReplayVoicePlayer, EOSReplayHighlights
 ├── AntiCheat/ (1 file) - EOSAntiCheatManager
 ├── EOSVoteKickManager.cs         # Player vote kick system
 ├── EOSMapVoteManager.cs          # Map/mode voting system
@@ -1084,6 +1084,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Teams & Clans** - Persistent player groups with roles, invites, chat, member management, clan history
 - **Global Chat Channels** - Cross-lobby chat channels with history, muting, system messages
 - **Reputation & Karma** - Commendation/report system with categories, levels, daily limits
+- **Replay Highlights** - Auto-detect significant moments (multi-kills, clutches, comebacks), manual bookmarks
 
 ### Next Up
 
