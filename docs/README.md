@@ -21,11 +21,9 @@
 
 - **Unity 6** (6000.0.65f1+) or Unity 2022.3 LTS
 - **FishNet** networking framework
-- **EOS SDK** - Install separately via:
-  - [EOS Unity Plugin](https://github.com/PlayEveryWare/eos_plugin_for_unity) (recommended)
-  - Or raw SDK from [Epic Developer Portal](https://dev.epicgames.com/portal)
+- **EOS C# SDK** from [Epic Developer Portal](https://dev.epicgames.com/portal)
 
-> **Note:** The EOS SDK is NOT included. See [Setup Guide](setup.md) for installation instructions.
+> **Note:** This transport uses the raw EOS C# SDK directly - no PlayEveryWare plugin needed. See [Setup Guide](setup.md) for installation.
 
 ## Quick Example
 
