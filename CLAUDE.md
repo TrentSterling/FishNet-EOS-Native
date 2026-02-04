@@ -101,56 +101,46 @@ Assets/FishNet.Transport.EOSNative/
 ```csharp
 var transport = GetComponent<EOSNativeTransport>();
 
-// Host
+// Simple host (auto-generates 4-digit code)
 var (result, lobby) = await transport.HostLobbyAsync();
-var (result, lobby) = await transport.HostLobbyAsync("1234");
-var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+var (result, lobby) = await transport.HostLobbyAsync("1234");  // Custom code
+
+// Host with options (recommended)
+var (result, lobby) = await transport.HostLobbyAsync(new LobbyOptions
 {
-    LobbyName = "My Room", GameMode = "deathmatch", MaxPlayers = 8
+    LobbyName = "My Room",
+    GameMode = "deathmatch",
+    MaxPlayers = 8
 });
 
 // Fluent style
 var (result, lobby) = await transport.HostLobbyAsync(
-    new LobbyCreateOptions()
+    new LobbyOptions()
         .WithName("My Room")
         .WithGameMode("deathmatch")
         .WithMaxPlayers(8)
 );
 
 // Host with EOS LobbyId as code (guaranteed unique, good for chat history)
-var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
-{
-    UseEosLobbyId = true  // Code will be EOS-generated ID
-});
+var (result, lobby) = await transport.HostLobbyAsync(
+    new LobbyOptions { UseEosLobbyId = true }
+);
 
-// Join by code
+// Join
 var (result, lobby) = await transport.JoinLobbyAsync("1234");
-
-// Join by name
 var (result, lobby) = await transport.JoinLobbyByNameAsync("Pro Players Only");
 
 // Quick Match (any lobby)
 var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
 
-// Quick Match with filters
+// Quick Match with filters (same options used for search AND host fallback)
 var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
-    new LobbySearchOptions()
+    new LobbyOptions()
         .WithGameMode("deathmatch")
         .WithRegion("us-east")
-        .WithBucketId("v1.0.1")
+        .WithMaxPlayers(8)
         .ExcludeFull()
 );
-
-// Unified LobbyOptions - same options work for host and quick match
-var options = new LobbyOptions
-{
-    LobbyName = "Pro Players Only",
-    GameMode = "competitive",
-    Region = "us-east",
-    MaxPlayers = 8
-};
-var (result, lobby) = await transport.HostLobbyAsync(options);
-var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(options);
 
 // Leave
 await transport.LeaveLobbyAsync();
@@ -163,7 +153,7 @@ if (transport.IsLobbyOwner) { }
 ### Lobby Search
 
 ```csharp
-var options = new LobbySearchOptions()
+var options = new LobbyOptions()
     .WithGameMode("ranked")
     .WithRegion("us-east")
     .ExcludePassworded()

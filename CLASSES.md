@@ -426,7 +426,7 @@ namespace FishNet.Transport.EOSNative
 
 ---
 
-### LobbyData / LobbyCreateOptions / LobbySearchOptions
+### LobbyData / LobbyOptions
 
 Data structures and options for lobby operations.
 
@@ -452,38 +452,53 @@ namespace FishNet.Transport.EOSNative.Lobbies
         public string Region { get; }
     }
 
-    // Options for creating a lobby
-    public class LobbyCreateOptions
+    // Unified options for hosting and searching (recommended)
+    public class LobbyOptions
     {
-        public uint MaxPlayers = 4;
+        // Shared fields (used for both create and search)
+        public string LobbyName;
+        public string GameMode;
+        public string Map;
+        public string Region;
+        public string BucketId;
+        public uint? MaxPlayers;
+
+        // Create-only fields
+        public bool UseEosLobbyId;
+        public bool EnableVoice = true;
+        public bool AllowHostMigration = true;
+        public string Password;
         public bool IsPublic = true;
-        public string JoinCode = null;  // Auto-generated if null
-        public string LobbyName = null;
-        public string GameMode = null;
-        public string Map = null;
-        public string Region = null;
-        public string Password = null;
-        public int? SkillLevel = null;
-    }
 
-    // Fluent builder for lobby search filters
-    public class LobbySearchOptions
-    {
+        // Search-only fields
         public uint MaxResults = 10;
-        public string JoinCode = null;
         public bool OnlyAvailable = true;
+        public bool ExcludePasswordProtected;
 
-        // Fluent methods
-        public LobbySearchOptions WithGameMode(string mode);
-        public LobbySearchOptions WithRegion(string region);
-        public LobbySearchOptions ExcludePassworded(bool exclude = true);
-        public LobbySearchOptions ExcludeGamesInProgress(bool exclude = true);
+        // Fluent builder methods
+        public LobbyOptions WithName(string name);
+        public LobbyOptions WithGameMode(string mode);
+        public LobbyOptions WithMap(string map);
+        public LobbyOptions WithRegion(string region);
+        public LobbyOptions WithMaxPlayers(uint max);
+        public LobbyOptions WithPassword(string password);
+        public LobbyOptions WithVoice(bool enable);
+        public LobbyOptions WithHostMigration(bool enable);
+        public LobbyOptions WithEosLobbyId();
+        public LobbyOptions ExcludePassworded();
+        public LobbyOptions ExcludeFull();
+        public LobbyOptions WithMaxResults(uint max);
 
-        // Static factories
-        public static LobbySearchOptions QuickMatch();
-        public static LobbySearchOptions ForGameMode(string mode);
-        public static LobbySearchOptions ForRegion(string region);
+        // Implicit conversions to legacy classes
+        public static implicit operator LobbyCreateOptions(LobbyOptions options);
+        public static implicit operator LobbySearchOptions(LobbyOptions options);
     }
+
+    // Legacy: Create-only options (still works, prefer LobbyOptions)
+    public class LobbyCreateOptions { /* ... */ }
+
+    // Legacy: Search-only options (still works, prefer LobbyOptions)
+    public class LobbySearchOptions { /* ... */ }
 }
 ```
 
