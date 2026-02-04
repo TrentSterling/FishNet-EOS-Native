@@ -23,18 +23,23 @@ var transport = GetComponent<EOSNativeTransport>();
 
 // Simple host (generates random 4-digit code, or pass any string)
 var (result, lobby) = await transport.HostLobbyAsync();
-
-// Host with custom code (any string works)
 var (result, lobby) = await transport.HostLobbyAsync("1234");
-var (result, lobby) = await transport.HostLobbyAsync("MyRoom");
 
-// Host with full options
-var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+// Host with options (recommended)
+var (result, lobby) = await transport.HostLobbyAsync(new LobbyOptions
 {
     LobbyName = "My Room",
     GameMode = "deathmatch",
     MaxPlayers = 8
 });
+
+// Fluent style
+var (result, lobby) = await transport.HostLobbyAsync(
+    new LobbyOptions()
+        .WithName("My Room")
+        .WithGameMode("deathmatch")
+        .WithMaxPlayers(8)
+);
 ```
 
 ### Joining a Lobby
@@ -46,10 +51,11 @@ var (result, lobby) = await transport.JoinLobbyAsync("1234");
 // Quick match - finds a lobby or hosts one
 var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
 
-// Or with filters:
+// Quick match with filters (same options used for search AND host fallback)
 var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
-    new LobbySearchOptions()
+    new LobbyOptions()
         .WithGameMode("deathmatch")
+        .WithRegion("us-east")
         .ExcludeFull()
 );
 ```
@@ -77,7 +83,7 @@ if (transport.IsLobbyOwner)
 ## Searching for Lobbies
 
 ```csharp
-var options = new LobbySearchOptions()
+var options = new LobbyOptions()
     .WithGameMode("ranked")
     .WithRegion("us-east")
     .ExcludePassworded()

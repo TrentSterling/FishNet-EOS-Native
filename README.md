@@ -126,8 +126,8 @@ var transport = GetComponent<EOSNativeTransport>();
 var (result, lobby) = await transport.HostLobbyAsync();
 Debug.Log($"Share code: {lobby.JoinCode}");
 
-// Or with custom options
-var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+// With options (recommended)
+var (result, lobby) = await transport.HostLobbyAsync(new LobbyOptions
 {
     LobbyName = "My Room",
     GameMode = "deathmatch",
@@ -143,8 +143,13 @@ var transport = GetComponent<EOSNativeTransport>();
 // Join by code
 var (result, lobby) = await transport.JoinLobbyAsync("1234");
 
-// Or quick match (finds any lobby, or hosts if none found)
+// Quick match (finds any lobby, or hosts if none found)
 var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
+
+// Quick match with filters (same options used for search AND host)
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
+    new LobbyOptions { GameMode = "deathmatch", Region = "us-east" }
+);
 ```
 
 ### Or Use the UI

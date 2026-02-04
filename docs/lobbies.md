@@ -44,42 +44,78 @@ var (result, lobby) = await transport.HostLobbyAsync("ABC123");
 var (result, lobby) = await transport.HostLobbyAsync("my-awesome-lobby");
 ```
 
-### With Full Options (Property Style)
+### With Options (Recommended)
+
+Use `LobbyOptions` to configure your lobby. Works for both hosting and searching:
 
 ```csharp
-var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+var (result, lobby) = await transport.HostLobbyAsync(new LobbyOptions
 {
     LobbyName = "Pro Players Only",
     GameMode = "competitive",
     Region = "us-east",
     MaxPlayers = 8,
-    Password = "secret123",
-    IsPublic = true
+    Password = "secret123"
 });
 ```
 
-### With Full Options (Fluent Style)
+Fluent style also works:
 
 ```csharp
 var (result, lobby) = await transport.HostLobbyAsync(
-    new LobbyCreateOptions()
+    new LobbyOptions()
         .WithName("Pro Players Only")
         .WithGameMode("competitive")
         .WithRegion("us-east")
         .WithMaxPlayers(8)
         .WithPassword("secret123")
-        .WithVoice(true)
 );
 ```
 
-Both styles work identically - use whichever you prefer.
+### LobbyOptions Fields
+
+| Field | Used For | Description |
+|-------|----------|-------------|
+| `LobbyName` | Create | Display name for the lobby |
+| `GameMode` | Both | Game mode filter/attribute |
+| `Map` | Both | Map filter/attribute |
+| `Region` | Both | Region filter/attribute |
+| `MaxPlayers` | Both | Max capacity / capacity filter |
+| `BucketId` | Both | Version/platform grouping |
+| `Password` | Create | Password protection |
+| `UseEosLobbyId` | Create | Use EOS-generated ID as code |
+| `EnableVoice` | Create | Enable voice chat (default: true) |
+| `AllowHostMigration` | Create | Allow host migration (default: true) |
+| `MaxResults` | Search | Limit search results |
+| `ExcludePasswordProtected` | Search | Only public lobbies |
+| `OnlyAvailable` | Search | Only lobbies with space (default: true) |
+
+### Fluent Builder Methods
+
+All fluent methods return the options object for chaining:
+
+| Method | Description |
+|--------|-------------|
+| `.WithName(string)` | Set lobby name |
+| `.WithGameMode(string)` | Set game mode |
+| `.WithMap(string)` | Set map |
+| `.WithRegion(string)` | Set region |
+| `.WithMaxPlayers(uint)` | Set max players |
+| `.WithBucketId(string)` | Set bucket ID |
+| `.WithPassword(string)` | Set password |
+| `.WithVoice(bool)` | Enable/disable voice |
+| `.WithHostMigration(bool)` | Enable/disable migration |
+| `.WithEosLobbyId()` | Use EOS-generated code |
+| `.ExcludePassworded()` | Exclude password-protected lobbies |
+| `.ExcludeFull()` | Exclude full lobbies |
+| `.WithMaxResults(uint)` | Limit search results |
 
 ### With EOS LobbyId as Code
 
-Use the EOS-generated LobbyId instead of a custom code. This guarantees uniqueness - useful for features like chat history that key off the lobby code.
+Use the EOS-generated LobbyId instead of a custom code. Guarantees uniqueness - useful for features like chat history that key off the lobby code:
 
 ```csharp
-var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
+var (result, lobby) = await transport.HostLobbyAsync(new LobbyOptions
 {
     UseEosLobbyId = true,  // Use EOS-generated ID as the code
     LobbyName = "My Room",
@@ -113,107 +149,62 @@ if (result == Result.Success)
 }
 ```
 
-### Quick Match
+### By Name
 
-Finds an available lobby or creates one:
+```csharp
+var (result, lobby) = await transport.JoinLobbyByNameAsync("Pro Players Only");
+```
+
+## Quick Match
+
+Finds an available lobby or creates one. This is the recommended way to implement "Play Now" functionality.
+
+### Basic Quick Match
 
 ```csharp
 var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
 
 if (didHost)
-{
     Debug.Log("Created new lobby");
-}
 else
-{
     Debug.Log("Joined existing lobby");
-}
 ```
 
 ### Quick Match with Filters
 
-Filter quick match by game mode, region, or other criteria:
+Use `LobbyOptions` to filter what lobbies to search for, and what settings to use if hosting:
 
 ```csharp
-var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
-    new LobbySearchOptions()
-        .WithGameMode("deathmatch")
-        .WithRegion("us-east")
-        .WithBucketId("v1.0.1")
-        .ExcludeFull()
-);
-
-if (didHost)
-    Debug.Log($"Created lobby: {lobby.Code}");
-else
-    Debug.Log($"Joined lobby: {lobby.Code}");
-```
-
-Available filters:
-
-| Method | Description |
-|--------|-------------|
-| `.WithGameMode(string)` | Filter by game mode |
-| `.WithRegion(string)` | Filter by region |
-| `.WithBucketId(string)` | Filter by version/platform |
-| `.WithMinPlayers(int)` | Minimum players in lobby |
-| `.WithMaxPlayers(int)` | Maximum lobby capacity |
-| `.ExcludeFull()` | Only lobbies with space |
-| `.ExcludePassworded()` | Only public lobbies |
-
-If no matching lobby is found, one is automatically created with those settings.
-
-### Unified LobbyOptions
-
-Use a single `LobbyOptions` object for both hosting and quick matching. The same options work for both creating and searching:
-
-```csharp
-// Define once, use for both
 var options = new LobbyOptions
 {
-    LobbyName = "Pro Players Only",
-    GameMode = "competitive",
+    GameMode = "deathmatch",
     Region = "us-east",
     MaxPlayers = 8
 };
 
-// Host with these options
-var (result, lobby) = await transport.HostLobbyAsync(options);
-
-// Or quick match with the same options
 var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(options);
 ```
 
-Fluent style also works:
+The same options object is used for:
+1. **Searching** - Finds lobbies matching GameMode, Region, etc.
+2. **Hosting** - If no match found, creates lobby with those same settings
+
+Fluent style:
 
 ```csharp
-var options = new LobbyOptions()
-    .WithName("Pro Players Only")
-    .WithGameMode("competitive")
-    .WithRegion("us-east")
-    .WithMaxPlayers(8);
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
+    new LobbyOptions()
+        .WithGameMode("deathmatch")
+        .WithRegion("us-east")
+        .WithMaxPlayers(8)
+        .ExcludeFull()
+);
 ```
-
-`LobbyOptions` includes fields for both create and search operations:
-
-| Field | Used For | Description |
-|-------|----------|-------------|
-| `LobbyName` | Create | Display name for the lobby |
-| `GameMode` | Both | Game mode filter/attribute |
-| `Map` | Both | Map filter/attribute |
-| `Region` | Both | Region filter/attribute |
-| `MaxPlayers` | Both | Max capacity / capacity filter |
-| `BucketId` | Both | Version/platform grouping |
-| `UseEosLobbyId` | Create | Use EOS-generated ID as code |
-| `EnableVoice` | Create | Enable voice chat |
-| `AllowHostMigration` | Create | Allow host migration |
-| `MaxResults` | Search | Limit search results |
-| `ExcludePasswordProtected` | Search | Only public lobbies |
 
 ## Searching for Lobbies
 
 ```csharp
-var options = new LobbySearchOptions()
+var options = new LobbyOptions()
     .WithGameMode("ranked")
     .WithRegion("us-east")
     .ExcludePassworded()
@@ -229,23 +220,7 @@ foreach (var lobby in lobbies)
 }
 ```
 
-### Search Options
-
-| Method | Description |
-|--------|-------------|
-| `.WithGameMode(string)` | Filter by game mode |
-| `.WithRegion(string)` | Filter by region |
-| `.WithLobbyName(string)` | Filter by exact lobby name |
-| `.WithLobbyNameContaining(string)` | Filter by name substring |
-| `.WithMinPlayers(int)` | Minimum player count |
-| `.WithMaxPlayers(int)` | Maximum player count |
-| `.ExcludePassworded()` | Only show public lobbies |
-| `.ExcludeFull()` | Only show lobbies with space |
-| `.WithMaxResults(int)` | Limit result count |
-
 ### Search by Name
-
-Search for lobbies by their name instead of join code:
 
 ```csharp
 // Search by exact name
@@ -253,9 +228,6 @@ var (result, lobbies) = await transport.SearchLobbiesByNameAsync("Pro Players On
 
 // Search by name containing substring
 var (result, lobbies) = await transport.SearchLobbiesByNameAsync("Pro", exactMatch: false);
-
-// Join a lobby by name
-var (result, lobby) = await transport.JoinLobbyByNameAsync("Pro Players Only");
 ```
 
 ## Lobby Attributes
@@ -321,3 +293,12 @@ lobby.OnPlayerLeft += (puid) => { };
 lobby.OnLobbyUpdated += (lobbyData) => { };
 lobby.OnKicked += () => { };
 ```
+
+## Legacy Classes
+
+For advanced use cases, you can still use the specific option classes:
+
+- `LobbyCreateOptions` - Create-only fields (auto-converts from `LobbyOptions`)
+- `LobbySearchOptions` - Search-only fields (auto-converts from `LobbyOptions`)
+
+`LobbyOptions` implicitly converts to either, so you rarely need these directly.
