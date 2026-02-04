@@ -41,7 +41,7 @@ Current development tasks for FishNet-EOS-Native.
 ### UX Polish
 - [x] **Copy Lobby Code to Clipboard** - One-click share button in UI
 - [ ] **Player Color System** - Auto-assign colors on join, display in UI/nameplates
-- [ ] **AFK Detection** - Track idle time, auto-kick option for hosts
+- [x] **AFK Detection** - Track idle time, auto-kick option for hosts
 
 ### Social Enhancements
 - [ ] **"Last Seen" for Friends** - Timestamp when friend was last online

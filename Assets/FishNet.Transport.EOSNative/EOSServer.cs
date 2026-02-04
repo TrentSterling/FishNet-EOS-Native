@@ -465,6 +465,9 @@ namespace FishNet.Transport.EOSNative
                 // Update last packet time for heartbeat tracking
                 _lastPacketTime[connectionId] = Time.realtimeSinceStartup;
 
+                // Track activity for AFK detection
+                EOSAfkManager.Instance?.OnNetworkDataReceived(connectionId);
+
                 // Process through fragmenter for reassembly
                 var rawData = new ArraySegment<byte>(_receiveBuffer, 0, (int)bytesWritten);
                 byte[] reassembled = _fragmenter.ProcessIncoming(connectionId, rawData, outChannel);

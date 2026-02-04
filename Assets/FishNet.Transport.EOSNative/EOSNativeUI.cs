@@ -4128,6 +4128,8 @@ namespace FishNet.Transport.EOSNative
             DrawNetworkMigrationSection();
             GUILayout.Space(4);
             DrawNetworkConnectionsSection();
+            GUILayout.Space(4);
+            DrawAfkSettingsSection();
 
             GUILayout.EndScrollView();
         }
@@ -4381,6 +4383,7 @@ namespace FishNet.Transport.EOSNative
                 int clientCount = _networkManager.ServerManager.Clients.Count;
                 GUILayout.Label($"Server: {clientCount} clients connected", _greenStyle);
 
+                var afkManager = EOSAfkManager.Instance;
                 foreach (var kvp in _networkManager.ServerManager.Clients)
                 {
                     int connId = kvp.Key;
@@ -4390,6 +4393,21 @@ namespace FishNet.Transport.EOSNative
                     GUILayout.BeginHorizontal();
                     GUILayout.Label($"  [{connId}]", _labelStyle, GUILayout.Width(45));
                     GUILayout.Label(shortPuid, _miniLabelStyle);
+
+                    // AFK indicator
+                    if (afkManager != null && afkManager.Enabled && afkManager.IsPlayerAfk(connId))
+                    {
+                        float afkTime = afkManager.GetAfkDuration(connId);
+                        float kickTime = afkManager.GetTimeUntilKick(connId);
+                        string afkText = kickTime > 0 ? $"AFK ({kickTime:0}s)" : $"AFK ({afkTime:0}s)";
+                        GUILayout.Label(afkText, _orangeStyle, GUILayout.Width(70));
+
+                        if (GUILayout.Button("Kick", _smallButtonStyle, GUILayout.Width(40)))
+                        {
+                            afkManager.KickPlayer(connId, "Kicked by host");
+                        }
+                    }
+
                     GUILayout.EndHorizontal();
                 }
             }
@@ -4433,6 +4451,63 @@ namespace FishNet.Transport.EOSNative
                 GUILayout.Label("Lobby Sync:", _labelStyle, GUILayout.Width(80));
                 GUILayout.Label(syncStatus, syncStyle);
                 GUILayout.EndHorizontal();
+            }
+
+            GUILayout.EndVertical();
+        }
+
+        private void DrawAfkSettingsSection()
+        {
+            var afkManager = EOSAfkManager.Instance;
+            if (afkManager == null) return;
+
+            GUILayout.Label("AFK DETECTION", _sectionHeaderStyle);
+            GUILayout.BeginVertical(_boxStyle);
+
+            // Enable toggle
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Enabled:", _labelStyle, GUILayout.Width(80));
+            bool newEnabled = GUILayout.Toggle(afkManager.Enabled, afkManager.Enabled ? "ON" : "OFF", _smallButtonStyle, GUILayout.Width(50));
+            if (newEnabled != afkManager.Enabled)
+                afkManager.Enabled = newEnabled;
+            GUILayout.EndHorizontal();
+
+            if (afkManager.Enabled)
+            {
+                // AFK threshold
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("AFK Threshold:", _labelStyle, GUILayout.Width(90));
+                GUILayout.Label($"{afkManager.AfkThreshold:0}s", _valueStyle, GUILayout.Width(40));
+                float newThreshold = GUILayout.HorizontalSlider(afkManager.AfkThreshold, 30f, 300f, GUILayout.Width(100));
+                if (Mathf.Abs(newThreshold - afkManager.AfkThreshold) > 1f)
+                    afkManager.AfkThreshold = Mathf.Round(newThreshold / 10f) * 10f;
+                GUILayout.EndHorizontal();
+
+                // Auto-kick delay
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Auto-Kick:", _labelStyle, GUILayout.Width(90));
+                string kickLabel = afkManager.AutoKickDelay > 0 ? $"{afkManager.AutoKickDelay:0}s" : "OFF";
+                GUILayout.Label(kickLabel, afkManager.AutoKickDelay > 0 ? _orangeStyle : _labelStyle, GUILayout.Width(40));
+                float newKickDelay = GUILayout.HorizontalSlider(afkManager.AutoKickDelay, 0f, 120f, GUILayout.Width(100));
+                if (Mathf.Abs(newKickDelay - afkManager.AutoKickDelay) > 1f)
+                    afkManager.AutoKickDelay = Mathf.Round(newKickDelay / 5f) * 5f;
+                GUILayout.EndHorizontal();
+
+                // Show warnings toggle
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Show Warnings:", _labelStyle, GUILayout.Width(90));
+                bool newWarnings = GUILayout.Toggle(afkManager.ShowAfkWarnings, afkManager.ShowAfkWarnings ? "ON" : "OFF", _smallButtonStyle, GUILayout.Width(50));
+                if (newWarnings != afkManager.ShowAfkWarnings)
+                    afkManager.ShowAfkWarnings = newWarnings;
+                GUILayout.EndHorizontal();
+
+                // AFK player count
+                var afkPlayers = afkManager.GetAfkPlayers();
+                if (afkPlayers.Count > 0)
+                {
+                    GUILayout.Space(4);
+                    GUILayout.Label($"AFK Players: {afkPlayers.Count}", _orangeStyle);
+                }
             }
 
             GUILayout.EndVertical();
