@@ -215,6 +215,69 @@ The system uses several compression techniques:
 - **Frames**: Delta compression (only changed objects)
 - **File**: GZip compression (~60% reduction)
 
+## Voice Recording
+
+Record voice chat during gameplay for replay playback.
+
+### Enable Voice Recording
+
+```csharp
+var voiceRecorder = EOSReplayVoiceRecorder.Instance;
+voiceRecorder.Enabled = true;  // Enabled by default
+
+// Voice recording starts automatically with replay recording
+// and stops when replay recording stops
+```
+
+### Voice Recording Settings
+
+```csharp
+// Configure in Inspector or code
+voiceRecorder._minSegmentDuration = 0.1f;  // Minimum voice segment
+voiceRecorder._maxSegmentDuration = 5f;    // Split long segments
+voiceRecorder._compressAudio = true;       // GZip compression (~60% reduction)
+voiceRecorder._maxVoiceDataMB = 50f;       // Size limit (0 = unlimited)
+```
+
+### Voice Playback
+
+```csharp
+var voicePlayer = EOSReplayVoicePlayer.Instance;
+
+// Voice playback is automatic during replay viewing
+// but can be controlled manually:
+
+voicePlayer.MasterVolume = 0.8f;  // 0-1
+voicePlayer.SetSpeakerVolume(puid, 0.5f);  // Per-speaker volume
+voicePlayer.SetSpeakerMuted(puid, true);   // Mute specific speaker
+
+// Get current speakers
+foreach (var puid in voicePlayer.CurrentSpeakers)
+{
+    string name = voicePlayer.GetSpeakerName(puid);
+    Debug.Log($"Speaking: {name}");
+}
+```
+
+### Voice Playback Events
+
+```csharp
+voicePlayer.OnPlaybackStarted += () => { };
+voicePlayer.OnPlaybackStopped += () => { };
+voicePlayer.OnSpeakerStarted += (puid, name) => { };
+voicePlayer.OnSpeakerStopped += (puid) => { };
+```
+
+### Storage
+
+Voice data is stored separately from replay frames:
+
+| Data | Typical Size |
+|------|--------------|
+| 10 min voice (1 speaker) | ~2-3 MB |
+| 10 min voice (4 speakers) | ~8-12 MB |
+| Max voice data | 50 MB (configurable) |
+
 ## Events
 
 ```csharp
