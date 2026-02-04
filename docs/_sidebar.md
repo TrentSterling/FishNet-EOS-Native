@@ -23,6 +23,7 @@
 * **Competitive**
   * [Ranked Matchmaking](ranked.md)
   * [Input-Based Matchmaking](inputmatchmaking.md)
+  * [Tournament Brackets](tournaments.md)
   * [Match History](match-history.md)
   * [Leaderboards & Stats](leaderboards.md)
 
