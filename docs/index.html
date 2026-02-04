@@ -250,25 +250,27 @@
     /* Theme switcher styles - in sidebar above search */
     .theme-switcher {
       display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+      gap: 4px;
+      flex-wrap: nowrap;
       justify-content: center;
-      padding: 0.75rem 1rem 0.5rem;
+      padding: 0.5rem 0.5rem 0.25rem;
     }
 
     .theme-btn {
-      width: 24px;
-      height: 24px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       border: 2px solid var(--border);
       cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s;
       position: relative;
+      flex-shrink: 0;
     }
 
     .theme-btn:hover {
-      transform: scale(1.2);
-      box-shadow: 0 0 8px var(--accent-glow);
+      transform: scale(1.25);
+      box-shadow: 0 0 6px var(--accent-glow);
+      z-index: 5;
     }
 
     .theme-btn.active {
@@ -306,6 +308,90 @@
 
     .theme-btn:hover::after {
       opacity: 1;
+    }
+
+    /* Random theme generator controls - hidden by default */
+    .theme-generator {
+      display: none;
+      gap: 4px;
+      justify-content: center;
+      padding: 0 0.5rem 0.5rem;
+      align-items: center;
+    }
+
+    /* Show generator only when custom theme is active */
+    [data-theme="custom"] .theme-generator {
+      display: flex;
+    }
+
+    .theme-dice-btn {
+      width: 24px;
+      height: 22px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .theme-dice-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: scale(1.1);
+    }
+
+    .theme-dice-btn:active {
+      transform: scale(0.95);
+    }
+
+    .theme-style-select {
+      flex: 1;
+      max-width: 90px;
+      height: 22px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-size: 11px;
+      padding: 0 6px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M3 4.5L6 8l3-3.5H3z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 4px center;
+      padding-right: 18px;
+    }
+
+    .theme-style-select:hover {
+      border-color: var(--accent);
+    }
+
+    .theme-style-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+
+    /* Custom theme button in preset row */
+    .theme-btn[data-theme="custom"] {
+      background: conic-gradient(
+        from 0deg,
+        #ff6b6b, #feca57, #48dbfb, #ff9ff3, #ff6b6b
+      );
+      position: relative;
+    }
+
+    .theme-btn[data-theme="custom"]::before {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      background: var(--bg-secondary);
+      border-radius: 50%;
     }
 
     * {
@@ -921,10 +1007,41 @@
   <div id="app"></div>
 
   <script>
-    // Theme switcher - apply saved theme immediately
+    // Theme switcher - apply saved theme immediately (before page renders)
     (function() {
       const savedTheme = localStorage.getItem('docs-theme') || 'dark';
       document.documentElement.setAttribute('data-theme', savedTheme);
+
+      // If custom theme, apply inline styles immediately to prevent flash
+      if (savedTheme === 'custom') {
+        const customTheme = localStorage.getItem('docs-custom-theme');
+        if (customTheme) {
+          try {
+            const theme = JSON.parse(customTheme);
+            const root = document.documentElement;
+            root.style.setProperty('--bg-primary', theme.bgPrimary);
+            root.style.setProperty('--bg-secondary', theme.bgSecondary);
+            root.style.setProperty('--bg-tertiary', theme.bgTertiary);
+            root.style.setProperty('--bg-code', theme.bgCode);
+            root.style.setProperty('--text-primary', theme.textPrimary);
+            root.style.setProperty('--text-secondary', theme.textSecondary);
+            root.style.setProperty('--text-muted', theme.textMuted);
+            root.style.setProperty('--accent', theme.accent);
+            root.style.setProperty('--accent-light', theme.accentLight);
+            root.style.setProperty('--accent-glow', theme.accentGlow);
+            root.style.setProperty('--accent-gold', theme.accentGold);
+            root.style.setProperty('--accent-gold-bg', theme.accentGoldBg);
+            root.style.setProperty('--link', theme.link);
+            root.style.setProperty('--link-hover', theme.linkHover);
+            root.style.setProperty('--border', theme.border);
+            root.style.setProperty('--border-light', theme.borderLight);
+            root.style.setProperty('--theme-color', theme.themeColor);
+          } catch (e) {
+            // Invalid JSON, fall back to dark
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        }
+      }
     })();
   </script>
 
@@ -965,6 +1082,284 @@
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
   <!-- Sidebar enhancements: theme switcher + arrow tracking -->
   <script>
+    // Random Theme Generator algorithms
+    const ThemeGenerator = {
+      // Style presets with HSL ranges
+      styles: {
+        neon: { name: 'Neon', satMin: 85, satMax: 100, lightMin: 50, lightMax: 60, darkBg: true },
+        pastel: { name: 'Pastel', satMin: 40, satMax: 80, lightMin: 70, lightMax: 90, darkBg: false },
+        vintage: { name: 'Vintage', satMin: 20, satMax: 50, lightMin: 40, lightMax: 80, darkBg: false },
+        dark: { name: 'Dark', satMin: 10, satMax: 60, lightMin: 5, lightMax: 20, darkBg: true }
+      },
+
+      // Random number in range
+      rand: (min, max) => Math.floor(Math.random() * (max - min + 1)) + min,
+
+      // HSL to RGB
+      hslToRgb(h, s, l) {
+        s /= 100; l /= 100;
+        const c = (1 - Math.abs(2 * l - 1)) * s;
+        const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+        const m = l - c / 2;
+        let r, g, b;
+        if (h < 60) { r = c; g = x; b = 0; }
+        else if (h < 120) { r = x; g = c; b = 0; }
+        else if (h < 180) { r = 0; g = c; b = x; }
+        else if (h < 240) { r = 0; g = x; b = c; }
+        else if (h < 300) { r = x; g = 0; b = c; }
+        else { r = c; g = 0; b = x; }
+        return [(r + m) * 255, (g + m) * 255, (b + m) * 255].map(Math.round);
+      },
+
+      // RGB to hex
+      rgbToHex: (r, g, b) => '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join(''),
+
+      // HSL to hex
+      hslToHex(h, s, l) {
+        const [r, g, b] = this.hslToRgb(h, s, l);
+        return this.rgbToHex(r, g, b);
+      },
+
+      // Get luminance for contrast calculation
+      getLuminance(hex) {
+        const rgb = hex.match(/[A-Fa-f0-9]{2}/g).map(x => parseInt(x, 16) / 255);
+        return rgb.map(c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4))
+          .reduce((a, b, i) => a + b * [0.2126, 0.7152, 0.0722][i], 0);
+      },
+
+      // Calculate contrast ratio between two colors
+      getContrastRatio(hex1, hex2) {
+        const l1 = this.getLuminance(hex1);
+        const l2 = this.getLuminance(hex2);
+        const lighter = Math.max(l1, l2);
+        const darker = Math.min(l1, l2);
+        return (lighter + 0.05) / (darker + 0.05);
+      },
+
+      // Generate a text color that contrasts with background
+      // Uses near-grayscale colors for maximum readability
+      getContrastingTextColor(bgHex, baseHue, targetLightness, minContrast = 4.5) {
+        const bgLum = this.getLuminance(bgHex);
+        const isDarkBg = bgLum < 0.5;
+
+        // For text, use very low saturation (nearly grayscale) for readability
+        // Just a hint of the base hue for cohesion
+        const saturation = 3;
+
+        // Try the target lightness first
+        let textColor = this.hslToHex(baseHue, saturation, targetLightness);
+        if (this.getContrastRatio(bgHex, textColor) >= minContrast) {
+          return textColor;
+        }
+
+        // Progressively adjust lightness until we get good contrast
+        // Move away from the background's luminance
+        const step = isDarkBg ? 5 : -5;
+        let l = targetLightness;
+        for (let i = 0; i < 15; i++) {
+          l += step;
+          l = Math.max(0, Math.min(100, l));
+          textColor = this.hslToHex(baseHue, saturation, l);
+          if (this.getContrastRatio(bgHex, textColor) >= minContrast) {
+            return textColor;
+          }
+        }
+
+        // Final fallback - pure black or white
+        return isDarkBg ? '#f0f0f0' : '#1a1a1a';
+      },
+
+      // Generate a palette of colors
+      generatePalette(style) {
+        const config = this.styles[style];
+        const baseHue = this.rand(0, 359);
+        const colors = [];
+
+        // Generate 5 colors with varying hue offsets
+        const hueOffsets = [0, 30, 60, 180, 210];
+        for (let i = 0; i < 5; i++) {
+          const h = (baseHue + hueOffsets[i]) % 360;
+          const s = this.rand(config.satMin, config.satMax);
+          const l = this.rand(config.lightMin, config.lightMax);
+          colors.push({ h, s, l, hex: this.hslToHex(h, s, l) });
+        }
+
+        return { colors, config, baseHue };
+      },
+
+      // Sort colors by lightness
+      sortByLightness(colors) {
+        return [...colors].sort((a, b) => this.getLuminance(a.hex) - this.getLuminance(b.hex));
+      },
+
+      // Generate a complete theme
+      generate(style = 'neon') {
+        const { colors, config, baseHue } = this.generatePalette(style);
+        const sorted = this.sortByLightness(colors);
+
+        // Find most saturated color for accent
+        const mostSaturated = [...colors].sort((a, b) => b.s - a.s)[0];
+
+        // Auto-assign based on dark/light theme
+        let bgPrimary, bgSecondary, bgTertiary, bgCode;
+
+        if (config.darkBg) {
+          // Dark theme: darkest colors for bg
+          bgPrimary = sorted[0].hex;
+          bgSecondary = sorted[1].hex;
+          bgTertiary = sorted[2].hex;
+          bgCode = this.hslToHex(sorted[0].h, sorted[0].s, Math.max(sorted[0].l - 2, 0));
+        } else {
+          // Light theme: lightest colors for bg
+          bgPrimary = sorted[4].hex;
+          bgSecondary = sorted[3].hex;
+          bgTertiary = sorted[2].hex;
+          bgCode = this.hslToHex(sorted[4].h, sorted[4].s, Math.min(sorted[4].l + 2, 100));
+        }
+
+        // Calculate text colors based on actual background luminance
+        const bgLum = this.getLuminance(bgPrimary);
+        const bgSecLum = this.getLuminance(bgSecondary);
+        const bgTerLum = this.getLuminance(bgTertiary);
+        const isDarkBg = bgLum < 0.5;
+
+        // Generate text colors with proper contrast
+        // Each text color must contrast with ALL backgrounds it might appear on
+        let textPrimary, textSecondary, textMuted;
+
+        if (isDarkBg) {
+          // Dark background - light text
+          // Start with target lightness and let the function find a good value
+          textPrimary = this.getContrastingTextColor(bgPrimary, baseHue, 92, 7);
+          // textSecondary appears on sidebar (bgSecondary) - needs to contrast there
+          textSecondary = this.getContrastingTextColor(bgSecondary, baseHue, 80, 4.5);
+          // Verify textSecondary also works on bgPrimary
+          if (this.getContrastRatio(bgPrimary, textSecondary) < 3) {
+            textSecondary = this.getContrastingTextColor(bgPrimary, baseHue, 75, 4.5);
+          }
+          // textMuted appears on various backgrounds - check against tertiary
+          textMuted = this.getContrastingTextColor(bgTertiary, baseHue, 65, 3);
+        } else {
+          // Light background - dark text
+          textPrimary = this.getContrastingTextColor(bgPrimary, baseHue, 12, 7);
+          // textSecondary appears on sidebar (bgSecondary)
+          textSecondary = this.getContrastingTextColor(bgSecondary, baseHue, 25, 4.5);
+          // Verify textSecondary also works on bgPrimary
+          if (this.getContrastRatio(bgPrimary, textSecondary) < 3) {
+            textSecondary = this.getContrastingTextColor(bgPrimary, baseHue, 30, 4.5);
+          }
+          // textMuted
+          textMuted = this.getContrastingTextColor(bgTertiary, baseHue, 40, 3);
+        }
+
+        // Accent: most saturated, ensure good visibility against bg
+        let accent = mostSaturated.hex;
+        let accentL = mostSaturated.l;
+        // Adjust accent if it doesn't contrast well with background
+        // Need at least 3:1 for UI elements - limit iterations to prevent infinite loop
+        for (let i = 0; i < 15 && this.getContrastRatio(bgPrimary, accent) < 3; i++) {
+          accentL += isDarkBg ? 5 : -5;
+          accentL = Math.max(20, Math.min(85, accentL));
+          accent = this.hslToHex(mostSaturated.h, mostSaturated.s, accentL);
+        }
+
+        // accentLight is used for h3 headings - must contrast with bgPrimary
+        let accentLightL = isDarkBg ? Math.min(accentL + 15, 90) : Math.max(accentL - 15, 20);
+        let accentLight = this.hslToHex(mostSaturated.h, mostSaturated.s, accentLightL);
+        // Ensure accentLight has good contrast for text readability (4.5:1)
+        for (let i = 0; i < 15 && this.getContrastRatio(bgPrimary, accentLight) < 4.5; i++) {
+          accentLightL += isDarkBg ? 5 : -5;
+          accentLightL = Math.max(15, Math.min(92, accentLightL));
+          accentLight = this.hslToHex(mostSaturated.h, mostSaturated.s, accentLightL);
+        }
+
+        const accentGlow = accent + '59'; // 35% alpha
+
+        // Link: complementary hue with contrast check
+        const linkHue = (baseHue + 180) % 360;
+        let linkL = isDarkBg ? 65 : 40;
+        let link = this.hslToHex(linkHue, 70, linkL);
+        // Ensure link contrasts with background
+        if (this.getContrastRatio(bgPrimary, link) < 4.5) {
+          linkL = isDarkBg ? 80 : 25;
+          link = this.hslToHex(linkHue, 70, linkL);
+        }
+        const linkHover = this.hslToHex(linkHue, 70, isDarkBg ? linkL + 10 : linkL - 10);
+
+        // Border colors - based on actual bg luminance
+        const borderL = isDarkBg ? Math.min(bgLum * 100 + 15, 35) : Math.max(bgLum * 100 - 15, 70);
+        const border = this.hslToHex(baseHue, 15, borderL);
+        const borderLight = this.hslToHex(baseHue, 15, borderL + (isDarkBg ? 8 : -8));
+
+        // Gold accent (for sub-items) - ensure it contrasts
+        let accentGold = isDarkBg ? '#FFD700' : '#9a6700';
+        if (this.getContrastRatio(bgSecondary, accentGold) < 3) {
+          accentGold = isDarkBg ? '#FFEB3B' : '#6b4600';
+        }
+        const accentGoldBg = isDarkBg ? 'rgba(255, 215, 0, 0.15)' : 'rgba(154, 103, 0, 0.1)';
+
+        return {
+          style,
+          bgPrimary, bgSecondary, bgTertiary, bgCode,
+          textPrimary, textSecondary, textMuted,
+          accent, accentLight, accentGlow, accentGold, accentGoldBg,
+          link, linkHover,
+          border, borderLight,
+          themeColor: accent
+        };
+      },
+
+      // Apply theme to document
+      apply(theme) {
+        const root = document.documentElement;
+        root.style.setProperty('--bg-primary', theme.bgPrimary);
+        root.style.setProperty('--bg-secondary', theme.bgSecondary);
+        root.style.setProperty('--bg-tertiary', theme.bgTertiary);
+        root.style.setProperty('--bg-code', theme.bgCode);
+        root.style.setProperty('--text-primary', theme.textPrimary);
+        root.style.setProperty('--text-secondary', theme.textSecondary);
+        root.style.setProperty('--text-muted', theme.textMuted);
+        root.style.setProperty('--accent', theme.accent);
+        root.style.setProperty('--accent-light', theme.accentLight);
+        root.style.setProperty('--accent-glow', theme.accentGlow);
+        root.style.setProperty('--accent-gold', theme.accentGold);
+        root.style.setProperty('--accent-gold-bg', theme.accentGoldBg);
+        root.style.setProperty('--link', theme.link);
+        root.style.setProperty('--link-hover', theme.linkHover);
+        root.style.setProperty('--border', theme.border);
+        root.style.setProperty('--border-light', theme.borderLight);
+        root.style.setProperty('--theme-color', theme.themeColor);
+
+        // Update custom button gradient
+        const customBtn = document.querySelector('.theme-btn[data-theme="custom"]');
+        if (customBtn) {
+          customBtn.style.background = `linear-gradient(135deg, ${theme.bgPrimary} 50%, ${theme.accent} 50%)`;
+        }
+      },
+
+      // Save theme to localStorage
+      save(theme) {
+        localStorage.setItem('docs-custom-theme', JSON.stringify(theme));
+        localStorage.setItem('docs-theme', 'custom');
+      },
+
+      // Load custom theme from localStorage
+      load() {
+        const saved = localStorage.getItem('docs-custom-theme');
+        return saved ? JSON.parse(saved) : null;
+      },
+
+      // Clear inline styles (for preset themes)
+      clearCustomStyles() {
+        const root = document.documentElement;
+        const props = ['--bg-primary', '--bg-secondary', '--bg-tertiary', '--bg-code',
+          '--text-primary', '--text-secondary', '--text-muted',
+          '--accent', '--accent-light', '--accent-glow', '--accent-gold', '--accent-gold-bg',
+          '--link', '--link-hover', '--border', '--border-light', '--theme-color'];
+        props.forEach(p => root.style.removeProperty(p));
+      }
+    };
+
     // Theme switcher - inject into sidebar
     function setupThemeSwitcher() {
       const sidebar = document.querySelector('.sidebar');
@@ -980,7 +1375,8 @@
         { id: 'blue', title: 'Blue' },
         { id: 'pink', title: 'Pink' },
         { id: 'pastel', title: 'Pastel' },
-        { id: 'contrast', title: 'Hi-Con' }
+        { id: 'contrast', title: 'Hi-Con' },
+        { id: 'custom', title: 'Custom' }
       ];
 
       // Create theme switcher container
@@ -993,7 +1389,23 @@
         btn.dataset.theme = theme.id;
         btn.title = theme.title;
         btn.addEventListener('click', function() {
-          document.documentElement.setAttribute('data-theme', theme.id);
+          if (theme.id === 'custom') {
+            // Load saved custom theme if exists
+            const customTheme = ThemeGenerator.load();
+            if (customTheme) {
+              ThemeGenerator.apply(customTheme);
+            } else {
+              // Generate a new one if none saved
+              const newTheme = ThemeGenerator.generate('neon');
+              ThemeGenerator.apply(newTheme);
+              ThemeGenerator.save(newTheme);
+            }
+            document.documentElement.setAttribute('data-theme', 'custom');
+          } else {
+            // Preset theme
+            ThemeGenerator.clearCustomStyles();
+            document.documentElement.setAttribute('data-theme', theme.id);
+          }
           localStorage.setItem('docs-theme', theme.id);
           document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
           this.classList.add('active');
@@ -1001,12 +1413,77 @@
         switcher.appendChild(btn);
       });
 
+      // Create random theme generator controls
+      const generator = document.createElement('div');
+      generator.className = 'theme-generator';
+
+      // Dice button
+      const diceBtn = document.createElement('button');
+      diceBtn.className = 'theme-dice-btn';
+      diceBtn.innerHTML = '🎲';
+      diceBtn.title = 'Generate random theme';
+
+      // Style dropdown
+      const styleSelect = document.createElement('select');
+      styleSelect.className = 'theme-style-select';
+      const styleOptions = [
+        { value: 'neon', label: 'Neon' },
+        { value: 'pastel', label: 'Pastel' },
+        { value: 'vintage', label: 'Vintage' },
+        { value: 'dark', label: 'Dark' }
+      ];
+      styleOptions.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label;
+        styleSelect.appendChild(option);
+      });
+
+      // Load saved style preference
+      const savedStyle = localStorage.getItem('docs-theme-style') || 'neon';
+      styleSelect.value = savedStyle;
+
+      // Save style preference on change
+      styleSelect.addEventListener('change', () => {
+        localStorage.setItem('docs-theme-style', styleSelect.value);
+      });
+
+      // Generate theme on dice click
+      diceBtn.addEventListener('click', () => {
+        const style = styleSelect.value;
+        const theme = ThemeGenerator.generate(style);
+        ThemeGenerator.apply(theme);
+        ThemeGenerator.save(theme);
+        document.documentElement.setAttribute('data-theme', 'custom');
+        localStorage.setItem('docs-theme', 'custom');
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.theme-btn[data-theme="custom"]')?.classList.add('active');
+      });
+
+      generator.appendChild(diceBtn);
+      generator.appendChild(styleSelect);
+
       // Insert before search (at very top of sidebar)
       const search = sidebar.querySelector('.search');
       if (search) {
-        sidebar.insertBefore(switcher, search);
+        sidebar.insertBefore(generator, search);
+        sidebar.insertBefore(switcher, generator);
       } else {
-        sidebar.insertBefore(switcher, sidebar.firstChild);
+        sidebar.insertBefore(generator, sidebar.firstChild);
+        sidebar.insertBefore(switcher, generator);
+      }
+
+      // Apply custom theme if that's what's saved
+      if (savedTheme === 'custom') {
+        const customTheme = ThemeGenerator.load();
+        if (customTheme) {
+          ThemeGenerator.apply(customTheme);
+          // Update custom button appearance
+          const customBtn = document.querySelector('.theme-btn[data-theme="custom"]');
+          if (customBtn) {
+            customBtn.style.background = `linear-gradient(135deg, ${customTheme.bgPrimary} 50%, ${customTheme.accent} 50%)`;
+          }
+        }
       }
     }
 
