@@ -9,6 +9,13 @@ namespace FishNet.Transport.EOSNative.Social
 {
     /// <summary>
     /// Manages tournament brackets with single/double elimination formats.
+    ///
+    /// SECURITY NOTE: Tournament state is managed locally and via lobby attributes.
+    /// For production tournaments, implement server-side validation:
+    /// - Host/organize tournaments through a dedicated server
+    /// - Validate match results server-side before advancing brackets
+    /// - Don't trust client-reported tournament outcomes
+    /// See SECURITY.md for the full security model.
     /// </summary>
     public class EOSTournamentManager : MonoBehaviour
     {

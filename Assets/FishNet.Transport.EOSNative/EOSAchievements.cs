@@ -350,6 +350,27 @@ namespace FishNet.Transport.EOSNative
         }
 
         /// <summary>
+        /// Unlock an achievement with host-authority validation.
+        /// Use this instead of UnlockAchievementAsync for secure multiplayer games.
+        /// The host must validate the unlock criteria before it's applied.
+        /// </summary>
+        public void UnlockAchievementSecure(string achievementId, Dictionary<string, object> context = null)
+        {
+            var validator = Security.HostAuthorityValidator.Instance;
+            if (validator != null)
+            {
+                validator.RequestAchievementValidation(achievementId, context);
+            }
+            else
+            {
+                // Fallback to direct call if no validator (offline mode, etc.)
+                Logging.EOSDebugLogger.LogWarning("EOSAchievements",
+                    "No HostAuthorityValidator found - using direct unlock (not secure)");
+                _ = UnlockAchievementAsync(achievementId);
+            }
+        }
+
+        /// <summary>
         /// Get an achievement definition by ID.
         /// </summary>
         public AchievementDefinition? GetDefinition(string achievementId)

@@ -568,6 +568,31 @@ namespace FishNet.Transport.EOSNative
         {
             if (_currentRematch == null) return;
 
+            // Security: Validate voter is in eligible list
+            if (!_currentRematch.EligiblePlayers.Contains(voterPuid))
+            {
+                EOSDebugLogger.LogWarning(DebugCategory.LobbyManager, "EOSRematchManager",
+                    $"Rejected vote from {voterPuid}: not eligible");
+                return;
+            }
+
+            // Security: Verify voter is still in lobby
+            var lobbyManager = EOSLobbyManager.Instance;
+            if (lobbyManager != null && !lobbyManager.IsPlayerInLobby(voterPuid))
+            {
+                EOSDebugLogger.LogWarning(DebugCategory.LobbyManager, "EOSRematchManager",
+                    $"Rejected vote from {voterPuid}: not in lobby");
+                return;
+            }
+
+            // Security: Rate limit votes
+            if (Security.SecurityValidator.IsRateLimited($"rematch_{voterPuid}", 10))
+            {
+                EOSDebugLogger.LogWarning(DebugCategory.LobbyManager, "EOSRematchManager",
+                    $"Rejected vote from {voterPuid}: rate limited");
+                return;
+            }
+
             _currentRematch.VotesYes.Remove(voterPuid);
             _currentRematch.VotesNo.Remove(voterPuid);
 

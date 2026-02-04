@@ -700,6 +700,23 @@ namespace FishNet.Transport.EOSNative
             if (!key.StartsWith(VOTE_RESPONSE_PREFIX)) return;
             if (_currentVote == null || _state != VoteState.Active) return;
 
+            // Security: Verify member is still in lobby (host-authority validation)
+            var lobbyManager = EOSLobbyManager.Instance;
+            if (lobbyManager != null && !lobbyManager.IsPlayerInLobby(memberPuid))
+            {
+                EOSDebugLogger.LogWarning(DebugCategory.LobbyManager, "EOSMapVoteManager",
+                    $"Rejected vote from {memberPuid}: not in lobby");
+                return;
+            }
+
+            // Security: Rate limit votes (prevent spam)
+            if (Security.SecurityValidator.IsRateLimited($"mapvote_{memberPuid}", 20))
+            {
+                EOSDebugLogger.LogWarning(DebugCategory.LobbyManager, "EOSMapVoteManager",
+                    $"Rejected vote from {memberPuid}: rate limited");
+                return;
+            }
+
             if (int.TryParse(value, out int optionIndex))
             {
                 if (optionIndex >= 0 && optionIndex < _currentVote.Options.Count)

@@ -539,6 +539,27 @@ namespace FishNet.Transport.EOSNative.Social
             return result;
         }
 
+        /// <summary>
+        /// Record a match result with host-authority validation.
+        /// Use this instead of RecordMatchResultAsync for secure ranked games.
+        /// The host must validate the result before it's applied.
+        /// </summary>
+        public void RecordMatchResultSecure(MatchOutcome outcome, int opponentRating, string matchId = null)
+        {
+            var validator = Security.HostAuthorityValidator.Instance;
+            if (validator != null)
+            {
+                validator.RequestMatchResultValidation(outcome, opponentRating, matchId);
+            }
+            else
+            {
+                // Fallback to direct call if no validator (offline mode, etc.)
+                EOSDebugLogger.LogWarning("EOSRankedMatchmaking",
+                    "No HostAuthorityValidator found - using direct record (not secure)");
+                _ = RecordMatchResultAsync(outcome, opponentRating);
+            }
+        }
+
         #endregion
 
         #region Public API - Tier Display
