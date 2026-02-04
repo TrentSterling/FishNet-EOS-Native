@@ -199,4 +199,4 @@ async void GoOnline()
 
 ### Connection ID
 
-In offline mode, the local client uses `NetworkConnection.SIMULATED_CLIENTID_VALUE` as its connection ID, same as FishNet's built-in local transport (Yak).
+In offline mode, the local client uses `NetworkConnection.SIMULATED_CLIENTID_VALUE` as its connection ID, which is FishNet's standard value for local/simulated connections.
