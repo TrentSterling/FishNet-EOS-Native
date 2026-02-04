@@ -350,6 +350,9 @@ namespace FishNet.Transport.EOSNative.Lobbies
             if (SkillLevel.HasValue)
                 attrs[LobbyAttributes.SKILL_LEVEL] = SkillLevel.Value.ToString();
 
+            // Always set host platform for filtering
+            attrs[LobbyAttributes.HOST_PLATFORM] = EOSPlatformHelper.PlatformId;
+
             return attrs;
         }
 
@@ -728,6 +731,70 @@ namespace FishNet.Transport.EOSNative.Lobbies
         }
 
         /// <summary>
+        /// Filter by host platform.
+        /// Platform IDs: "WIN" (Windows), "MAC" (macOS), "LNX" (Linux),
+        ///               "AND" (Android), "IOS" (iOS), "OVR" (Quest/Meta VR)
+        /// </summary>
+        public LobbySearchOptions WithPlatform(string platformId)
+        {
+            EnsureFilters();
+            Filters[LobbyAttributes.HOST_PLATFORM] = platformId;
+            return this;
+        }
+
+        /// <summary>
+        /// Filter by host platform using EOSPlatformType.
+        /// </summary>
+        public LobbySearchOptions WithPlatform(EOSPlatformType platform)
+        {
+            string platformId = platform switch
+            {
+                EOSPlatformType.Windows => "WIN",
+                EOSPlatformType.macOS => "MAC",
+                EOSPlatformType.Linux => "LNX",
+                EOSPlatformType.Android => "AND",
+                EOSPlatformType.iOS => "IOS",
+                EOSPlatformType.Quest => "OVR",
+                _ => null
+            };
+            if (!string.IsNullOrEmpty(platformId))
+                return WithPlatform(platformId);
+            return this;
+        }
+
+        /// <summary>
+        /// Filter to only desktop platforms (Windows, macOS, Linux).
+        /// </summary>
+        public LobbySearchOptions DesktopOnly()
+        {
+            AttributeFilters.Add(new AttributeFilter(
+                LobbyAttributes.HOST_PLATFORM,
+                "WIN,MAC,LNX",
+                SearchComparison.AnyOf));
+            return this;
+        }
+
+        /// <summary>
+        /// Filter to only mobile platforms (Android, iOS, Quest).
+        /// </summary>
+        public LobbySearchOptions MobileOnly()
+        {
+            AttributeFilters.Add(new AttributeFilter(
+                LobbyAttributes.HOST_PLATFORM,
+                "AND,IOS,OVR",
+                SearchComparison.AnyOf));
+            return this;
+        }
+
+        /// <summary>
+        /// Filter to same platform as the current device.
+        /// </summary>
+        public LobbySearchOptions SamePlatformOnly()
+        {
+            return WithPlatform(EOSPlatformHelper.PlatformId);
+        }
+
+        /// <summary>
         /// Filter lobbies by name containing a substring (case sensitive).
         /// </summary>
         public LobbySearchOptions WithLobbyNameContaining(string substring)
@@ -984,6 +1051,13 @@ namespace FishNet.Transport.EOSNative.Lobbies
         /// </summary>
         public int? MaxSkill;
 
+        /// <summary>
+        /// Platform filter.
+        /// Values: "WIN", "MAC", "LNX", "AND", "IOS", "OVR", "DESKTOP", "MOBILE", "SAME"
+        /// Search-only.
+        /// </summary>
+        public string PlatformFilter;
+
         #endregion
 
         #region Fluent Builder Methods - Shared
@@ -1029,6 +1103,10 @@ namespace FishNet.Transport.EOSNative.Lobbies
         public LobbyOptions WithMinSkill(int min) { MinSkill = min; return this; }
         public LobbyOptions WithMaxSkill(int max) { MaxSkill = max; return this; }
         public LobbyOptions WithSkillRange(int min, int max) { MinSkill = min; MaxSkill = max; return this; }
+        public LobbyOptions WithPlatformFilter(string platformId) { PlatformFilter = platformId; return this; }
+        public LobbyOptions DesktopOnly() { PlatformFilter = "DESKTOP"; return this; }
+        public LobbyOptions MobileOnly() { PlatformFilter = "MOBILE"; return this; }
+        public LobbyOptions SamePlatformOnly() { PlatformFilter = "SAME"; return this; }
 
         #endregion
 
@@ -1092,6 +1170,27 @@ namespace FishNet.Transport.EOSNative.Lobbies
                 options = options.WithMinSkill(MinSkill.Value);
             if (MaxSkill.HasValue)
                 options = options.WithMaxSkill(MaxSkill.Value);
+
+            // Apply platform filter
+            if (!string.IsNullOrEmpty(PlatformFilter))
+            {
+                switch (PlatformFilter.ToUpperInvariant())
+                {
+                    case "DESKTOP":
+                        options = options.DesktopOnly();
+                        break;
+                    case "MOBILE":
+                        options = options.MobileOnly();
+                        break;
+                    case "SAME":
+                        options = options.SamePlatformOnly();
+                        break;
+                    default:
+                        // Treat as specific platform ID
+                        options = options.WithPlatform(PlatformFilter);
+                        break;
+                }
+            }
 
             // Copy custom attributes
             if (Attributes != null)
@@ -1219,6 +1318,12 @@ namespace FishNet.Transport.EOSNative.Lobbies
         /// Custom game settings JSON or simple string.
         /// </summary>
         public const string GAME_SETTINGS = "GAME_SETTINGS";
+
+        /// <summary>
+        /// Host's platform ID for platform filtering.
+        /// Values: "WIN", "MAC", "LNX", "AND", "IOS", "OVR"
+        /// </summary>
+        public const string HOST_PLATFORM = "HOST_PLATFORM";
     }
 
     /// <summary>
