@@ -25,6 +25,8 @@
       --accent: #FF5733;
       --accent-light: #ff7b5a;
       --accent-glow: rgba(255, 87, 51, 0.35);
+      --accent-gold: #FFD700;
+      --accent-gold-bg: rgba(255, 215, 0, 0.15);
 
       --link: #58a6ff;
       --link-hover: #79b8ff;
@@ -59,16 +61,94 @@
       padding: 1rem 0;
       flex: 1;
       overflow-y: auto;
-      padding-bottom: 2rem;
+      overflow-y: overlay; /* Overlay scrollbar - floats over content */
+      padding-bottom: 1rem;
     }
 
-    /* Fix sidebar toggle/button sizing */
-    .sidebar .sidebar-toggle,
-    .sidebar button {
-      width: 32px;
-      height: 32px;
-      min-width: 32px;
-      min-height: 32px;
+    /* Sidebar toggle button - tab on right edge, vertically centered */
+    .sidebar-toggle {
+      position: fixed !important;
+      top: 50% !important;
+      left: 300px !important; /* Sidebar width + border */
+      transform: translateY(-50%) !important;
+      width: 24px !important;
+      height: 48px !important;
+      padding: 0 !important;
+      background: var(--bg-tertiary) !important;
+      border: 1px solid var(--border) !important;
+      border-left: none !important;
+      border-radius: 0 6px 6px 0 !important;
+      z-index: 20 !important;
+      cursor: pointer !important;
+      transition: left 0.25s ease-out !important;
+    }
+
+    .sidebar-toggle:hover {
+      background: var(--bg-secondary) !important;
+    }
+
+    /* Hide the hamburger spans on desktop (mobile shows them) */
+    @media (min-width: 769px) {
+      .sidebar-toggle span {
+        display: none !important;
+      }
+    }
+
+    /* Arrow using ::after - points LEFT when expanded (click to collapse) */
+    .sidebar-toggle::after {
+      content: '' !important;
+      display: block !important;
+      width: 0 !important;
+      height: 0 !important;
+      border-top: 6px solid transparent !important;
+      border-bottom: 6px solid transparent !important;
+      border-right: 8px solid var(--accent) !important;
+      position: absolute !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+    }
+
+    /* When sidebar is closed - arrow points RIGHT (click to expand) */
+    body.close .sidebar-toggle {
+      left: 0 !important;
+      border-left: none !important;
+    }
+
+    body.close .sidebar-toggle::after {
+      border-right: none !important;
+      border-left: 8px solid var(--accent) !important;
+    }
+
+    /* Mobile: Reset to Docsify hamburger defaults */
+    @media (max-width: 768px) {
+      /* Reset toggle to Docsify defaults on mobile */
+      .sidebar-toggle {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        width: auto !important;
+        height: auto !important;
+        padding: 10px !important;
+        border-radius: 0 !important;
+        border: none !important;
+        border-top: 1px solid var(--border) !important;
+        z-index: 100 !important; /* Stay above sidebar overlay */
+        background: var(--bg-secondary) !important;
+      }
+
+      /* Show hamburger spans on mobile */
+      .sidebar-toggle span {
+        display: block !important;
+        background: var(--accent) !important;
+      }
+
+      /* Hide our custom arrow on mobile */
+      .sidebar-toggle::after {
+        display: none !important;
+      }
     }
 
     .sidebar-nav ul {
@@ -95,7 +175,9 @@
       border-left-color: var(--accent);
     }
 
-    .sidebar-nav li.active > a {
+    /* Top-level items: active OR has active descendant = orange */
+    .sidebar-nav > ul > li.active > a,
+    .sidebar-nav > ul > li:has(.active) > a {
       color: var(--accent);
       background: rgba(255, 87, 51, 0.15);
       border-left-color: var(--accent);
@@ -125,26 +207,30 @@
       /* First level pages */
     }
 
-    /* Items that have sub-items (nested ul) */
-    .sidebar-nav li.has-children > a::after,
-    .sidebar-nav > ul > li > a:not(:only-child)::after {
+    /* Items that have sub-items - arrow points RIGHT when collapsed */
+    .sidebar-nav li.has-children > a::after {
       content: '';
       display: inline-block;
       width: 0;
       height: 0;
       margin-left: 0.5rem;
-      border-left: 5px solid transparent;
-      border-right: 5px solid transparent;
-      border-top: 5px solid var(--text-muted);
-      transition: transform 0.2s ease;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      border-left: 5px solid var(--text-muted);
+      transition: transform 0.2s ease, border-color 0.2s ease;
       vertical-align: middle;
     }
 
-    /* Active/expanded state - rotate arrow */
-    .sidebar-nav li.active > a::after,
-    .sidebar-nav > ul > li.active > a:not(:only-child)::after {
-      transform: rotate(180deg);
-      border-top-color: var(--accent);
+    /* Arrow rotates DOWN when expanded */
+    .sidebar-nav li.has-children.expanded > a::after {
+      transform: rotate(90deg);
+      border-left-color: var(--accent);
+    }
+
+    /* Active/has-active state - arrow turns orange */
+    .sidebar-nav > ul > li.active > a::after,
+    .sidebar-nav > ul > li:has(.active) > a::after {
+      border-left-color: var(--accent);
     }
 
     /* Sub-navigation container */
@@ -157,7 +243,7 @@
       margin-bottom: 0.5rem;
     }
 
-    /* Sub-navigation items */
+    /* Sub-navigation items - muted gray by default */
     .sidebar-nav li ul li a {
       padding: 0.35rem 1rem 0.35rem 1rem;
       font-size: 0.8rem;
@@ -171,14 +257,28 @@
       border-left: none;
     }
 
-    .sidebar-nav li ul li.active a {
+    /* Active sub-item: GOLD instead of orange for visual hierarchy */
+    .sidebar-nav li ul li.active > a {
+      color: var(--accent-gold) !important;
+      background: var(--accent-gold-bg) !important;
+      font-weight: 600;
+      border-radius: 4px;
+      box-shadow: none;
+    }
+
+    /* 2nd level items with active children: orange (they're parents too) */
+    .sidebar-nav li ul li:has(.active) > a {
       color: var(--accent);
       background: rgba(255, 87, 51, 0.1);
       font-weight: 500;
-      border-radius: 4px;
     }
 
-    /* Deeper nesting */
+    /* Arrow for 2nd level parents with active children - just color change */
+    .sidebar-nav li ul li:has(.active) > a::after {
+      border-left-color: var(--accent);
+    }
+
+    /* Deeper nesting (3rd level / grandchildren) */
     .sidebar-nav li ul li ul {
       margin-left: 0.75rem;
       border-left-color: var(--border-light);
@@ -187,6 +287,14 @@
     .sidebar-nav li ul li ul li a {
       font-size: 0.75rem;
       padding: 0.25rem 0.75rem;
+    }
+
+    /* Active grandchild: also gold */
+    .sidebar-nav li ul li ul li.active > a {
+      color: var(--accent-gold) !important;
+      background: var(--accent-gold-bg) !important;
+      font-weight: 600;
+      border-radius: 4px;
     }
 
     /* App name / logo */
@@ -577,18 +685,45 @@
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-csharp.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
-  <!-- Mark sidebar items with children -->
+  <!-- Sidebar arrow expand/collapse tracking -->
   <script>
-    function markSidebarParents() {
-      document.querySelectorAll('.sidebar-nav li').forEach(li => {
+    function setupSidebarArrows() {
+      const sidebar = document.querySelector('.sidebar-nav');
+      if (!sidebar) return;
+
+      // Mark items with children
+      sidebar.querySelectorAll('li').forEach(li => {
         if (li.querySelector('ul')) {
           li.classList.add('has-children');
         }
       });
+
+      // Check if ul is visible (has height > 0)
+      function isExpanded(li) {
+        const ul = li.querySelector('ul');
+        return ul && ul.offsetHeight > 0;
+      }
+
+      // Update expanded class based on actual visibility
+      function updateExpandedStates() {
+        sidebar.querySelectorAll('li.has-children').forEach(li => {
+          li.classList.toggle('expanded', isExpanded(li));
+        });
+      }
+
+      // Run on initial load
+      updateExpandedStates();
+
+      // Watch for clicks that might toggle visibility
+      sidebar.addEventListener('click', (e) => {
+        // Small delay to let Docsify process the click first
+        setTimeout(updateExpandedStates, 50);
+      });
     }
-    // Run on load and on route change
+
+    // Hook into Docsify
     window.$docsify.plugins = (window.$docsify.plugins || []).concat(function(hook) {
-      hook.doneEach(markSidebarParents);
+      hook.doneEach(setupSidebarArrows);
     });
   </script>
 </body>
