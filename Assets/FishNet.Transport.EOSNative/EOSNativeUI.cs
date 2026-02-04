@@ -1101,11 +1101,15 @@ namespace FishNet.Transport.EOSNative
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
 
-                // Lobby ID (for debugging)
+                // Lobby ID (for debugging) with screenshot button
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 string shortId = lobby.LobbyId?.Length > 16 ? lobby.LobbyId.Substring(0, 16) + "..." : lobby.LobbyId;
                 GUILayout.Label($"ID: {shortId}", _miniLabelStyle);
+                if (GUILayout.Button("📸", GUILayout.Width(25), GUILayout.Height(18)))
+                {
+                    CopyLobbyStateToClipboard(lobby);
+                }
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
 
@@ -3829,6 +3833,56 @@ namespace FishNet.Transport.EOSNative
             }
 
             _lobbyOperationInProgress = false;
+        }
+
+        private void CopyLobbyStateToClipboard(LobbyData lobby)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("=== LOBBY STATE ===");
+            sb.AppendLine($"Code: {lobby.JoinCode}");
+            sb.AppendLine($"ID: {lobby.LobbyId}");
+            sb.AppendLine($"Owner: {lobby.OwnerPuid}");
+            sb.AppendLine($"Players: {lobby.MemberCount}/{lobby.MaxMembers}");
+            sb.AppendLine();
+
+            // Attributes
+            sb.AppendLine("--- Attributes ---");
+            if (!string.IsNullOrEmpty(lobby.LobbyName)) sb.AppendLine($"Name: {lobby.LobbyName}");
+            if (!string.IsNullOrEmpty(lobby.GameMode)) sb.AppendLine($"GameMode: {lobby.GameMode}");
+            if (!string.IsNullOrEmpty(lobby.Map)) sb.AppendLine($"Map: {lobby.Map}");
+            if (!string.IsNullOrEmpty(lobby.Region)) sb.AppendLine($"Region: {lobby.Region}");
+            if (lobby.SkillLevel > 0) sb.AppendLine($"Skill: {lobby.SkillLevel}");
+            sb.AppendLine($"InProgress: {lobby.IsInProgress}");
+            sb.AppendLine($"Public: {lobby.IsPublic}");
+            sb.AppendLine();
+
+            // Members
+            sb.AppendLine("--- Members ---");
+            var registry = EOSPlayerRegistry.Instance;
+            foreach (var memberPuid in lobby.MemberPuids)
+            {
+                string name = registry?.GetDisplayName(memberPuid) ?? memberPuid;
+                string platform = registry?.GetPlatform(memberPuid) ?? "?";
+                bool isOwner = memberPuid == lobby.OwnerPuid;
+                sb.AppendLine($"  {(isOwner ? "[HOST] " : "")}{name} ({platform}) - {memberPuid}");
+            }
+            sb.AppendLine();
+
+            // Network state
+            sb.AppendLine("--- Network ---");
+            sb.AppendLine($"Server Started: {_networkManager?.IsServerStarted}");
+            sb.AppendLine($"Client Started: {_networkManager?.IsClientStarted}");
+            if (_networkManager?.IsServerStarted == true)
+            {
+                sb.AppendLine($"Connected Clients: {_networkManager.ServerManager.Clients.Count}");
+            }
+            sb.AppendLine();
+
+            sb.AppendLine($"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine("==================");
+
+            GUIUtility.systemCopyBuffer = sb.ToString();
+            EOSToastManager.Success("Copied!", "Lobby state copied to clipboard");
         }
 
         #endregion

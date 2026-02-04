@@ -40,23 +40,23 @@ Current development tasks for FishNet-EOS-Native.
 
 ### UX Polish
 - [x] **Copy Lobby Code to Clipboard** - One-click share button in UI
-- [ ] **Player Color System** - Auto-assign colors on join, display in UI/nameplates
+- [x] **Player Color System** - Auto-assign colors on join, display in UI/nameplates
 - [x] **AFK Detection** - Track idle time, auto-kick option for hosts
 
 ### Social Enhancements
-- [ ] **"Last Seen" for Friends** - Timestamp when friend was last online
-- [ ] **Player Tags/Titles** - Host can assign labels ("VIP", "Noob", custom text)
-- [ ] **"Time Played Together"** - Track cumulative play time with each friend
+- [x] **"Last Seen" for Friends** - Timestamp when friend was last online (already existed)
+- [x] **Player Tags/Titles** - Host can assign labels ("VIP", "Noob", custom text)
+- [x] **"Time Played Together"** - Track cumulative play time with each friend
 
 ### Debug/Dev Tools
-- [ ] **Fake Players for Testing** - Spawn bots that move randomly (ParrelSync alternative)
-- [ ] **Screenshot Lobby State** - Copy lobby info to clipboard for bug reports
-- [ ] **Auto-Reconnect** - Automatically attempt reconnect on disconnect
+- [x] **Fake Players for Testing** - Spawn bots that move randomly (ParrelSync alternative)
+- [x] **Screenshot Lobby State** - Copy lobby info to clipboard for bug reports
+- [x] **Auto-Reconnect** - Automatically attempt reconnect on disconnect
 
 ### Demo/Fun
-- [ ] **Confetti on Join** - Particle effect when player joins lobby (demo showcase)
-- [ ] **Chat Emotes/Reactions** - React to messages with 👍👎😂 etc.
-- [ ] **"First to Join" Badge** - Special indicator for first player after host
+- [x] **Confetti on Join** - Particle effect when player joins lobby (demo showcase)
+- [x] **Chat Emotes/Reactions** - React to messages with 👍👎😂 etc.
+- [x] **"First to Join" Badge** - Special indicator for first player after host
 
 ---
 

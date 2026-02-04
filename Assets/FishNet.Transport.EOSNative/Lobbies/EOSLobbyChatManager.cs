@@ -46,6 +46,18 @@ namespace FishNet.Transport.EOSNative.Lobbies
         /// </summary>
         public event Action<string, string, string, long> OnChatMessageReceived;
 
+        /// <summary>
+        /// Fired when a reaction is added to a message.
+        /// Parameters: message timestamp (ID), emoji, reactor PUID.
+        /// </summary>
+        public event Action<long, string, string> OnReactionAdded;
+
+        /// <summary>
+        /// Fired when a reaction is removed from a message.
+        /// Parameters: message timestamp (ID), emoji, reactor PUID.
+        /// </summary>
+        public event Action<long, string, string> OnReactionRemoved;
+
         #endregion
 
         #region Serialized Fields
@@ -95,6 +107,14 @@ namespace FishNet.Transport.EOSNative.Lobbies
         private string _currentLobbyCode;
         private const string CHAT_HISTORY_PREFIX = "chat_history_";
         private const int MAX_PERSISTED_MESSAGES = 50;
+
+        // Reactions: messageTimestamp -> emoji -> list of reactor PUIDs
+        private readonly Dictionary<long, Dictionary<string, HashSet<string>>> _reactions = new();
+
+        /// <summary>
+        /// Available reaction emojis.
+        /// </summary>
+        public static readonly string[] AvailableReactions = { "👍", "👎", "😂", "❤️", "😮", "😢", "🎉", "🔥" };
 
         #endregion
 
@@ -286,6 +306,114 @@ namespace FishNet.Transport.EOSNative.Lobbies
                 _displayNameCache[puid] = name;
                 _playerRegistry?.RegisterPlayer(puid, name);
             }
+        }
+
+        /// <summary>
+        /// Add a reaction to a message.
+        /// </summary>
+        /// <param name="messageTimestamp">The timestamp of the message (used as ID).</param>
+        /// <param name="emoji">The emoji reaction.</param>
+        public void AddReaction(long messageTimestamp, string emoji)
+        {
+            var localPuid = EOSManager.Instance?.LocalProductUserId?.ToString();
+            if (string.IsNullOrEmpty(localPuid)) return;
+
+            if (!_reactions.ContainsKey(messageTimestamp))
+                _reactions[messageTimestamp] = new Dictionary<string, HashSet<string>>();
+
+            if (!_reactions[messageTimestamp].ContainsKey(emoji))
+                _reactions[messageTimestamp][emoji] = new HashSet<string>();
+
+            if (_reactions[messageTimestamp][emoji].Add(localPuid))
+            {
+                OnReactionAdded?.Invoke(messageTimestamp, emoji, localPuid);
+            }
+        }
+
+        /// <summary>
+        /// Remove a reaction from a message.
+        /// </summary>
+        public void RemoveReaction(long messageTimestamp, string emoji)
+        {
+            var localPuid = EOSManager.Instance?.LocalProductUserId?.ToString();
+            if (string.IsNullOrEmpty(localPuid)) return;
+
+            if (_reactions.TryGetValue(messageTimestamp, out var emojiDict))
+            {
+                if (emojiDict.TryGetValue(emoji, out var reactors))
+                {
+                    if (reactors.Remove(localPuid))
+                    {
+                        OnReactionRemoved?.Invoke(messageTimestamp, emoji, localPuid);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Toggle a reaction on a message.
+        /// </summary>
+        public void ToggleReaction(long messageTimestamp, string emoji)
+        {
+            var localPuid = EOSManager.Instance?.LocalProductUserId?.ToString();
+            if (string.IsNullOrEmpty(localPuid)) return;
+
+            if (HasReacted(messageTimestamp, emoji, localPuid))
+                RemoveReaction(messageTimestamp, emoji);
+            else
+                AddReaction(messageTimestamp, emoji);
+        }
+
+        /// <summary>
+        /// Check if a user has reacted with a specific emoji.
+        /// </summary>
+        public bool HasReacted(long messageTimestamp, string emoji, string puid = null)
+        {
+            puid ??= EOSManager.Instance?.LocalProductUserId?.ToString();
+            if (string.IsNullOrEmpty(puid)) return false;
+
+            if (_reactions.TryGetValue(messageTimestamp, out var emojiDict))
+            {
+                if (emojiDict.TryGetValue(emoji, out var reactors))
+                {
+                    return reactors.Contains(puid);
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Get all reactions for a message.
+        /// </summary>
+        public Dictionary<string, int> GetReactions(long messageTimestamp)
+        {
+            var result = new Dictionary<string, int>();
+
+            if (_reactions.TryGetValue(messageTimestamp, out var emojiDict))
+            {
+                foreach (var kvp in emojiDict)
+                {
+                    if (kvp.Value.Count > 0)
+                        result[kvp.Key] = kvp.Value.Count;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Get who reacted with a specific emoji.
+        /// </summary>
+        public List<string> GetReactors(long messageTimestamp, string emoji)
+        {
+            if (_reactions.TryGetValue(messageTimestamp, out var emojiDict))
+            {
+                if (emojiDict.TryGetValue(emoji, out var reactors))
+                {
+                    return new List<string>(reactors);
+                }
+            }
+            return new List<string>();
         }
 
         #endregion
