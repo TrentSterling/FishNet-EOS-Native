@@ -19,9 +19,13 @@
 
 ## Requirements
 
-- **Unity 6** (6000.0.65f1+)
+- **Unity 6** (6000.0.65f1+) or Unity 2022.3 LTS
 - **FishNet** networking framework
-- **EOS SDK** (included)
+- **EOS SDK** - Install separately via:
+  - [EOS Unity Plugin](https://github.com/PlayEveryWare/eos_plugin_for_unity) (recommended)
+  - Or raw SDK from [Epic Developer Portal](https://dev.epicgames.com/portal)
+
+> **Note:** The EOS SDK is NOT included. See [Setup Guide](setup.md) for installation instructions.
 
 ## Quick Example
 
