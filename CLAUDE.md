@@ -78,7 +78,7 @@ Assets/FishNet.Transport.EOSNative/
 ├── Lobbies/ (3 files) - EOSLobbyManager, EOSLobbyChatManager, LobbyData
 ├── Voice/ (5 files) - EOSVoiceManager, EOSVoicePlayer, FishNetVoicePlayer, EOSVoiceZoneManager, EOSVoiceTriggerZone
 ├── Migration/ (5 files) - HostMigratable, HostMigrationManager, HostMigrationPlayerSpawner, HostMigrationTester, DoNotMigrate
-├── Social/ (11 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager
+├── Social/ (12 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager, EOSTournamentManager
 ├── Storage/ (2 files) - EOSPlayerDataStorage, EOSTitleStorage
 ├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
 ├── Replay/ (11 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings, EOSReplayVoiceRecorder, EOSReplayVoicePlayer
@@ -539,6 +539,63 @@ lfg.OnPostCreated += (post) => { };
 lfg.OnJoinRequestReceived += (request) => { };
 lfg.OnJoinRequestAccepted += (post) => { };
 lfg.OnSearchResultsReceived += (posts) => { };
+```
+
+### Tournament Brackets
+
+Organize competitive tournaments with single/double elimination or round robin.
+
+```csharp
+var tm = EOSTournamentManager.Instance;
+
+// Create tournament
+var t = tm.CreateTournament(new TournamentOptions()
+    .WithName("Friday Night Cup")
+    .WithFormat(TournamentFormat.DoubleElimination)
+    .WithSeeding(SeedingMethod.ByRating)
+    .WithBestOf(3)
+    .WithGrandFinalsBestOf(5)
+);
+
+// Register participants
+tm.RegisterParticipant(puid, "PlayerName");
+tm.RegisterTeam(teamId, "Team Alpha", memberPuids);
+
+// Start (generates bracket)
+tm.StartTournament();
+
+// Get current matches
+var matches = tm.GetCurrentRoundMatches();
+
+// Report results
+tm.ReportMatchResult(matchId, winnerId, winnerScore: 2, loserScore: 1);
+// Bracket auto-advances
+
+// Get bracket visualization data
+var bracket = tm.GetBracketData(BracketType.Winners);
+foreach (var round in bracket.Rounds)
+{
+    Debug.Log($"--- {round.RoundName} ---");
+    foreach (var match in round.Matches) { }
+}
+
+// Get standings
+var standings = tm.GetStandings();
+```
+
+**Formats:**
+- `TournamentFormat.SingleElimination` - One loss out
+- `TournamentFormat.DoubleElimination` - Losers bracket + grand finals
+- `TournamentFormat.RoundRobin` - Everyone plays everyone
+
+**Events:**
+```csharp
+tm.OnTournamentStarted += (t) => { };
+tm.OnTournamentEnded += (t, winner) => { };
+tm.OnMatchReady += (match) => { };
+tm.OnMatchCompleted += (match) => { };
+tm.OnParticipantEliminated += (p) => { };
+tm.OnRoundAdvanced += (round) => { };
 ```
 
 ### Chat History
@@ -1022,6 +1079,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Platform Filtering** - Filter lobby searches by host platform (same, desktop, mobile, specific)
 - **Voice Recording in Replays** - Capture and playback voice chat during replay recording/viewing
 - **Input-Based Matchmaking** - Match players by input device (KBM/Controller/Touch/VR) for fair competitive play
+- **Tournament Brackets** - Single/double elimination, round robin, seeding, best-of series, bracket visualization
 
 ### Next Up
 
