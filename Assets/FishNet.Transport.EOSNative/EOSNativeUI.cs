@@ -3897,6 +3897,8 @@ namespace FishNet.Transport.EOSNative
             GUILayout.Space(4);
             DrawVoiceLocalMic();
             GUILayout.Space(4);
+            DrawVoiceZoneSection();
+            GUILayout.Space(4);
             DrawVoiceParticipants();
             GUILayout.Space(4);
             DrawVoiceControls();
@@ -4165,6 +4167,96 @@ namespace FishNet.Transport.EOSNative
                 if (!string.IsNullOrEmpty(player.ParticipantPuid))
                     voiceManager.SetParticipantMuted(player.ParticipantPuid, false);
             }
+        }
+
+        private void DrawVoiceZoneSection()
+        {
+            GUILayout.Label("VOICE ZONES", _sectionHeaderStyle);
+            GUILayout.BeginVertical(_boxStyle);
+
+            var zoneManager = EOSVoiceZoneManager.Instance;
+            if (zoneManager == null)
+            {
+                GUILayout.Label("Voice Zone Manager not found", _miniLabelStyle);
+                if (GUILayout.Button("Add Voice Zone Manager", _smallButtonStyle))
+                {
+                    var go = EOSVoiceManager.Instance?.gameObject ?? GameObject.Find("NetworkManager");
+                    if (go != null)
+                        go.AddComponent<EOSVoiceZoneManager>();
+                }
+                GUILayout.EndVertical();
+                return;
+            }
+
+            // Current mode display
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Mode:", _labelStyle, GUILayout.Width(50));
+            GUILayout.Label(zoneManager.ZoneMode.ToString(), _greenStyle);
+            GUILayout.EndHorizontal();
+
+            // Mode selection buttons
+            GUILayout.BeginHorizontal();
+            GUI.backgroundColor = zoneManager.ZoneMode == VoiceZoneMode.Global ? Color.green : Color.white;
+            if (GUILayout.Button("Global", _smallButtonStyle))
+                zoneManager.SetZoneMode(VoiceZoneMode.Global);
+
+            GUI.backgroundColor = zoneManager.ZoneMode == VoiceZoneMode.Proximity ? Color.green : Color.white;
+            if (GUILayout.Button("Proximity", _smallButtonStyle))
+                zoneManager.SetZoneMode(VoiceZoneMode.Proximity);
+
+            GUI.backgroundColor = zoneManager.ZoneMode == VoiceZoneMode.Team ? Color.green : Color.white;
+            if (GUILayout.Button("Team", _smallButtonStyle))
+                zoneManager.SetZoneMode(VoiceZoneMode.Team);
+
+            GUI.backgroundColor = Color.white;
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUI.backgroundColor = zoneManager.ZoneMode == VoiceZoneMode.TeamProximity ? Color.green : Color.white;
+            if (GUILayout.Button("Team+Prox", _smallButtonStyle))
+                zoneManager.SetZoneMode(VoiceZoneMode.TeamProximity);
+
+            GUI.backgroundColor = zoneManager.ZoneMode == VoiceZoneMode.Custom ? Color.green : Color.white;
+            if (GUILayout.Button("Custom", _smallButtonStyle))
+                zoneManager.SetZoneMode(VoiceZoneMode.Custom);
+
+            GUI.backgroundColor = Color.white;
+            GUILayout.EndHorizontal();
+
+            // Show mode-specific info
+            if (zoneManager.ZoneMode == VoiceZoneMode.Proximity || zoneManager.ZoneMode == VoiceZoneMode.TeamProximity)
+            {
+                GUILayout.Space(4);
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Range:", _labelStyle, GUILayout.Width(50));
+                GUILayout.Label($"{zoneManager.MaxHearingDistance:0}m", _valueStyle);
+                GUILayout.EndHorizontal();
+
+                var playersInRange = zoneManager.GetPlayersInRange();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("In Range:", _labelStyle, GUILayout.Width(50));
+                GUILayout.Label(playersInRange.Count.ToString(), _greenStyle);
+                GUILayout.EndHorizontal();
+            }
+
+            if (zoneManager.ZoneMode == VoiceZoneMode.Team || zoneManager.ZoneMode == VoiceZoneMode.TeamProximity)
+            {
+                GUILayout.Space(4);
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Team:", _labelStyle, GUILayout.Width(50));
+
+                // Team selection buttons
+                for (int i = 0; i < 4; i++)
+                {
+                    GUI.backgroundColor = zoneManager.LocalTeam == i ? Color.cyan : Color.white;
+                    if (GUILayout.Button(i.ToString(), _smallButtonStyle, GUILayout.Width(30)))
+                        zoneManager.SetTeam(i);
+                }
+                GUI.backgroundColor = Color.white;
+                GUILayout.EndHorizontal();
+            }
+
+            GUILayout.EndVertical();
         }
 
         #endregion

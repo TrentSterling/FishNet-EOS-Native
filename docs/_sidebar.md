@@ -7,6 +7,7 @@
   * [Lobbies](lobbies.md)
   * [Offline Mode](offline.md)
   * [Voice Chat](voice.md)
+  * [Voice Zones](voicezones.md)
   * [Text Chat](chat.md)
   * [Host Migration](migration.md)
   * [Vote Kick](votekick.md)
