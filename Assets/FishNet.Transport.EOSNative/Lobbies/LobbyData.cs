@@ -353,6 +353,9 @@ namespace FishNet.Transport.EOSNative.Lobbies
             // Always set host platform for filtering
             attrs[LobbyAttributes.HOST_PLATFORM] = EOSPlatformHelper.PlatformId;
 
+            // Always set host input type for input-based matchmaking
+            attrs[LobbyAttributes.HOST_INPUT_TYPE] = EOSInputHelper.InputTypeId;
+
             return attrs;
         }
 
@@ -795,6 +798,75 @@ namespace FishNet.Transport.EOSNative.Lobbies
         }
 
         /// <summary>
+        /// Filter by host input type.
+        /// Input type IDs: "KBM" (Keyboard/Mouse), "CTL" (Controller), "TCH" (Touch), "VRC" (VR Controller)
+        /// </summary>
+        public LobbySearchOptions WithInputType(string inputTypeId)
+        {
+            EnsureFilters();
+            Filters[LobbyAttributes.HOST_INPUT_TYPE] = inputTypeId;
+            return this;
+        }
+
+        /// <summary>
+        /// Filter by host input type using InputType enum.
+        /// </summary>
+        public LobbySearchOptions WithInputType(InputType inputType)
+        {
+            return WithInputType(EOSInputHelper.GetInputTypeId(inputType));
+        }
+
+        /// <summary>
+        /// Filter to only keyboard/mouse lobbies.
+        /// </summary>
+        public LobbySearchOptions KeyboardMouseOnly()
+        {
+            return WithInputType("KBM");
+        }
+
+        /// <summary>
+        /// Filter to only controller lobbies.
+        /// </summary>
+        public LobbySearchOptions ControllerOnly()
+        {
+            return WithInputType("CTL");
+        }
+
+        /// <summary>
+        /// Filter to same input type as current device.
+        /// </summary>
+        public LobbySearchOptions SameInputOnly()
+        {
+            return WithInputType(EOSInputHelper.InputTypeId);
+        }
+
+        /// <summary>
+        /// Filter to "fair" input types (same type or compatible).
+        /// KBM only matches KBM, Controller/Touch match each other, VR only matches VR.
+        /// </summary>
+        public LobbySearchOptions FairInputOnly()
+        {
+            var current = EOSInputHelper.CurrentInputType;
+            switch (current)
+            {
+                case InputType.KeyboardMouse:
+                    return WithInputType("KBM");
+                case InputType.Controller:
+                case InputType.Touch:
+                    // Controller and touch are considered fair against each other
+                    AttributeFilters.Add(new AttributeFilter(
+                        LobbyAttributes.HOST_INPUT_TYPE,
+                        "CTL,TCH",
+                        SearchComparison.AnyOf));
+                    return this;
+                case InputType.VRController:
+                    return WithInputType("VRC");
+                default:
+                    return this; // No filter for unknown
+            }
+        }
+
+        /// <summary>
         /// Filter lobbies by name containing a substring (case sensitive).
         /// </summary>
         public LobbySearchOptions WithLobbyNameContaining(string substring)
@@ -1058,6 +1130,13 @@ namespace FishNet.Transport.EOSNative.Lobbies
         /// </summary>
         public string PlatformFilter;
 
+        /// <summary>
+        /// Input type filter for input-based matchmaking.
+        /// Values: "KBM", "CTL", "TCH", "VRC", "SAME", "FAIR"
+        /// Search-only.
+        /// </summary>
+        public string InputFilter;
+
         #endregion
 
         #region Fluent Builder Methods - Shared
@@ -1107,6 +1186,11 @@ namespace FishNet.Transport.EOSNative.Lobbies
         public LobbyOptions DesktopOnly() { PlatformFilter = "DESKTOP"; return this; }
         public LobbyOptions MobileOnly() { PlatformFilter = "MOBILE"; return this; }
         public LobbyOptions SamePlatformOnly() { PlatformFilter = "SAME"; return this; }
+        public LobbyOptions WithInputFilter(string inputTypeId) { InputFilter = inputTypeId; return this; }
+        public LobbyOptions KeyboardMouseOnly() { InputFilter = "KBM"; return this; }
+        public LobbyOptions ControllerOnly() { InputFilter = "CTL"; return this; }
+        public LobbyOptions SameInputOnly() { InputFilter = "SAME"; return this; }
+        public LobbyOptions FairInputOnly() { InputFilter = "FAIR"; return this; }
 
         #endregion
 
@@ -1188,6 +1272,24 @@ namespace FishNet.Transport.EOSNative.Lobbies
                     default:
                         // Treat as specific platform ID
                         options = options.WithPlatform(PlatformFilter);
+                        break;
+                }
+            }
+
+            // Apply input type filter
+            if (!string.IsNullOrEmpty(InputFilter))
+            {
+                switch (InputFilter.ToUpperInvariant())
+                {
+                    case "SAME":
+                        options = options.SameInputOnly();
+                        break;
+                    case "FAIR":
+                        options = options.FairInputOnly();
+                        break;
+                    default:
+                        // Treat as specific input type ID (KBM, CTL, TCH, VRC)
+                        options = options.WithInputType(InputFilter);
                         break;
                 }
             }
@@ -1324,6 +1426,12 @@ namespace FishNet.Transport.EOSNative.Lobbies
         /// Values: "WIN", "MAC", "LNX", "AND", "IOS", "OVR"
         /// </summary>
         public const string HOST_PLATFORM = "HOST_PLATFORM";
+
+        /// <summary>
+        /// Host's input type for input-based matchmaking.
+        /// Values: "KBM" (Keyboard/Mouse), "CTL" (Controller), "TCH" (Touch), "VRC" (VR Controller)
+        /// </summary>
+        public const string HOST_INPUT_TYPE = "HOST_INPUT_TYPE";
     }
 
     /// <summary>

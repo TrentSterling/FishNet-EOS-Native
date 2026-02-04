@@ -55,12 +55,13 @@ EOS Lobby (persistent layer)
 
 ```
 Assets/FishNet.Transport.EOSNative/
-├── CORE (10 files)
+├── CORE (11 files)
 │   ├── EOSManager.cs              # SDK init, Tick, device login
 │   ├── EOSConfig.cs               # ScriptableObject credentials
 │   ├── EOSNativeTransport.cs      # Main transport + lobby API
 │   ├── EOSServer.cs / EOSClient.cs / EOSClientHost.cs
 │   ├── EOSPlayerRegistry.cs       # Player cache + local friends
+│   ├── EOSInputHelper.cs          # Input type detection for matchmaking
 │   ├── PacketFragmenter.cs        # >1170 byte packets
 │   └── Connection.cs / LocalPacket.cs
 │
@@ -313,6 +314,42 @@ var (result, lobbies) = await transport.SearchLobbiesAsync(
     // or .MobileOnly()                      // Android/iOS/Quest only
     // or .WithPlatformFilter("WIN")         // Specific platform
 );
+```
+
+### Input-Based Matchmaking
+
+Match players by input device for fair competitive play.
+
+```csharp
+// Get current input type
+InputType type = EOSInputHelper.CurrentInputType;
+string typeId = EOSInputHelper.InputTypeId; // "KBM", "CTL", "TCH", "VRC"
+
+// Input checks
+if (EOSInputHelper.IsKeyboardMouse) { }
+if (EOSInputHelper.IsController) { }
+if (EOSInputHelper.IsTouch) { }
+if (EOSInputHelper.IsVR) { }
+
+// Display info
+string name = EOSInputHelper.GetInputTypeName(type); // "Keyboard & Mouse"
+string icon = EOSInputHelper.GetInputTypeIcon(type); // emoji
+
+// Input filtering for lobby search
+var (result, lobbies) = await transport.SearchLobbiesAsync(
+    new LobbyOptions().SameInputOnly()      // Same input as host
+    // or .KeyboardMouseOnly()               // KBM only
+    // or .ControllerOnly()                  // Controller only
+    // or .FairInputOnly()                   // Compatible inputs (KBM vs KBM, CTL vs CTL/Touch)
+    // or .WithInputFilter("CTL")            // Specific input type
+);
+
+// Listen for input changes
+EOSInputHelper.OnInputTypeChanged += (newType) => { };
+
+// Check if inputs are "fair" for matchmaking
+bool fair = EOSInputHelper.AreInputTypesFair(InputType.Controller, InputType.Touch);
+// Returns: true (controller and touch are compatible)
 ```
 
 ### Toast Notifications
@@ -984,6 +1021,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **LFG System** - Create/browse LFG posts, send/manage join requests, auto-expiring posts
 - **Platform Filtering** - Filter lobby searches by host platform (same, desktop, mobile, specific)
 - **Voice Recording in Replays** - Capture and playback voice chat during replay recording/viewing
+- **Input-Based Matchmaking** - Match players by input device (KBM/Controller/Touch/VR) for fair competitive play
 
 ### Next Up
 
