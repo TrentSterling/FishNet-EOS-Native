@@ -8,33 +8,53 @@ Complete setup guide for FishNet EOS Native transport.
 - FishNet Networking (via Package Manager or Asset Store)
 - EOS SDK (see installation below)
 
-## Step 1: Install EOS SDK
+## Step 1: Install EOS C# SDK
 
-**IMPORTANT:** The transport requires the EOS SDK to be installed first.
+**IMPORTANT:** This transport uses the raw EOS C# SDK directly - no PlayEveryWare plugin needed.
 
-### Option A: EOS Unity Plugin (Recommended)
+### Download the SDK
 
-1. Download from [Epic Games GitHub](https://github.com/PlayEveryWare/eos_plugin_for_unity) or Unity Asset Store
-2. Import into your project
-3. The plugin includes `Epic.OnlineServices.asmdef` - no additional setup needed
+1. Go to [Epic Developer Portal](https://dev.epicgames.com/portal)
+2. Navigate to your product → SDK & Release Notes
+3. Download the **EOS C# SDK** (not the Unity Plugin)
 
-### Option B: Raw EOS SDK (Advanced)
+### Install the SDK
 
-If using the raw EOS SDK without the Unity Plugin:
+1. Extract the SDK zip
+2. Copy the C# SDK files to `Assets/Plugins/EOSSDK/`
+   - Include the `Core/` folder with all `.cs` files
+   - Include platform DLLs (`EOSSDK-Win64-Shipping.dll`, etc.)
 
-1. Download EOS SDK from [Epic Developer Portal](https://dev.epicgames.com/portal)
-2. Copy SDK files to `Assets/Plugins/EOSSDK/`
 3. **Create the asmdef file** (required for assembly references):
    - Copy `Assets/FishNet.Transport.EOSNative/Editor/EOSSDKSetup/Epic.OnlineServices.asmdef.txt`
-   - Rename to `Epic.OnlineServices.asmdef`
-   - Place in your EOS SDK folder (e.g., `Assets/Plugins/EOSSDK/`)
-4. Configure platform settings for DLLs in Unity Inspector
+   - Rename to `Epic.OnlineServices.asmdef` (remove the `.txt`)
+   - Place in your SDK folder: `Assets/Plugins/EOSSDK/Epic.OnlineServices.asmdef`
 
-### Verifying EOS SDK Installation
+4. Configure platform settings for DLLs in Unity Inspector:
+   - `EOSSDK-Win64-Shipping.dll` → Windows x64 only
+   - `EOSSDK-Win32-Shipping.dll` → Windows x86 only
 
-After installation, you should see:
+### Folder Structure
+
+```
+Assets/Plugins/EOSSDK/
+├── Epic.OnlineServices.asmdef    ← You create this
+├── Core/
+│   ├── *.cs                      ← C# SDK source files
+├── Generated/
+│   ├── *.cs                      ← Generated bindings
+├── x86_64/
+│   └── EOSSDK-Win64-Shipping.dll
+├── x86/
+│   └── EOSSDK-Win32-Shipping.dll
+└── ... (other platform libs)
+```
+
+### Verifying Installation
+
+After setup, you should see:
 - No compile errors referencing `Epic` namespace
-- An `Epic.OnlineServices` assembly in your project
+- `Epic.OnlineServices` assembly visible in project
 
 ## Step 2: Install FishNet EOS Native
 
@@ -131,12 +151,13 @@ DLL files should be configured automatically. Verify in Unity Inspector:
 
 ### "The type or namespace 'Epic' could not be found"
 
-**Cause:** EOS SDK not installed or missing asmdef file.
+**Cause:** EOS C# SDK not installed or missing asmdef file.
 
 **Fix:**
-1. Verify EOS SDK is in your project
+1. Verify EOS C# SDK files are in `Assets/Plugins/EOSSDK/`
 2. Check for `Epic.OnlineServices.asmdef` in your SDK folder
-3. If missing, copy from `Editor/EOSSDKSetup/Epic.OnlineServices.asmdef.txt`
+3. If missing, copy from `Editor/EOSSDKSetup/Epic.OnlineServices.asmdef.txt` and rename (remove `.txt`)
+4. Make sure the asmdef is in the same folder as your SDK `.cs` files
 
 ### "Result.AlreadyConfigured"
 
