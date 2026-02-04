@@ -51,10 +51,24 @@
     .sidebar {
       background: var(--bg-secondary);
       border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
     }
 
     .sidebar-nav {
       padding: 1rem 0;
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 2rem;
+    }
+
+    /* Fix sidebar toggle/button sizing */
+    .sidebar .sidebar-toggle,
+    .sidebar button {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      min-height: 32px;
     }
 
     .sidebar-nav ul {
@@ -76,16 +90,17 @@
     }
 
     .sidebar-nav li > a:hover {
-      color: var(--text-primary);
+      color: var(--accent-light);
       background: var(--bg-tertiary);
       border-left-color: var(--accent);
     }
 
     .sidebar-nav li.active > a {
       color: var(--accent);
-      background: rgba(255, 87, 51, 0.1);
+      background: rgba(255, 87, 51, 0.15);
       border-left-color: var(--accent);
       font-weight: 500;
+      box-shadow: inset 0 0 20px rgba(255, 87, 51, 0.1);
     }
 
     .sidebar-nav li > p {
@@ -94,8 +109,11 @@
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      padding: 1.5rem 1.5rem 0.5rem;
-      margin: 0;
+      padding: 0.75rem 1rem;
+      margin: 0.5rem 0.75rem 0.25rem;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      border-left: 3px solid var(--accent);
     }
 
     /* Parent items with children get a chevron */
@@ -154,9 +172,10 @@
     }
 
     .sidebar-nav li ul li.active a {
-      color: var(--accent-light);
-      background: transparent;
+      color: var(--accent);
+      background: rgba(255, 87, 51, 0.1);
       font-weight: 500;
+      border-radius: 4px;
     }
 
     /* Deeper nesting */
@@ -176,8 +195,9 @@
       font-weight: 700;
       font-size: 1.25rem;
       padding: 1.5rem !important;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--accent);
       margin-bottom: 0.5rem;
+      background: linear-gradient(180deg, transparent 0%, rgba(255, 87, 51, 0.05) 100%);
     }
 
     .app-name-link:hover {
