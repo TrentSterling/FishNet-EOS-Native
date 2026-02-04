@@ -83,6 +83,7 @@ Assets/FishNet.Transport.EOSNative/
 ├── Replay/ (9 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings
 ├── AntiCheat/ (1 file) - EOSAntiCheatManager
 ├── EOSVoteKickManager.cs         # Player vote kick system
+├── EOSMapVoteManager.cs          # Map/mode voting system
 ├── EOSSpectatorMode.cs           # Spectator camera system
 ├── Editor/ (4 files) - EOSNativeTransportEditor, EOSNativeMenu, EOSSetupWizard, EOSDebugSettingsWindow
 └── Demo/ (5 files) - PlayerBall, NetworkPhysicsObject, PlayerSpawner, etc.
@@ -733,6 +734,61 @@ voteKick.OnPlayerVoteKicked += (puid, name) => { };
 | TimedOut | Vote expired before conclusion |
 | Cancelled | Initiator or target left |
 
+### Map/Mode Voting
+
+Let players vote on the next map or game mode.
+
+```csharp
+var mapVote = EOSMapVoteManager.Instance;
+
+// Simple map vote
+await mapVote.StartMapVoteAsync("Vote for Next Map", "Dust 2", "Inferno", "Mirage");
+
+// Simple mode vote
+await mapVote.StartModeVoteAsync("Choose Game Mode", "Deathmatch", "CTF", "KOTH");
+
+// Custom options
+var options = new List<VoteOption>
+{
+    new VoteOption("dust2", "Dust 2", "map"),
+    new VoteOption("inferno", "Inferno", "map"),
+    new VoteOption("mirage", "Mirage", "map"),
+};
+await mapVote.StartVoteAsync("Vote for Next Map", options);
+
+// Cast vote (by index or ID)
+await mapVote.CastVoteAsync(0);          // Vote for first option
+await mapVote.CastVoteByIdAsync("dust2"); // Vote by ID
+
+// Check status
+if (mapVote.IsVoteActive) { }
+int myVote = mapVote.GetMyVote();         // -1 if not voted
+int[] counts = mapVote.GetVoteCounts();   // Votes per option
+List<int> leaders = mapVote.GetCurrentLeaders();
+
+// Host controls
+mapVote.ExtendTimer(15f);   // Add time
+mapVote.EndVoteNow();       // End immediately
+await mapVote.CancelVoteAsync();
+```
+
+**Configuration:**
+```csharp
+mapVote.VoteDuration = 30f;              // Seconds for voting
+mapVote.AllowVoteChange = true;          // Can change vote
+mapVote.ShowLiveResults = true;          // Show counts in real-time
+mapVote.TieBreakerMode = TieBreaker.Random;  // Random, FirstOption, HostChoice, Revote
+```
+
+**Events:**
+```csharp
+mapVote.OnVoteStarted += (voteData) => { };
+mapVote.OnVoteCast += (voterPuid, optionIndex) => { };
+mapVote.OnTimerTick += (secondsRemaining) => { };
+mapVote.OnVoteEnded += (voteData, winningOption, winningIndex) => { };
+mapVote.OnTieNeedsDecision += (tiedOptions) => { };  // For HostChoice mode
+```
+
 ## Coding Standards
 
 - **Namespace:** `FishNet.Transport.EOSNative`
@@ -801,6 +857,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Replay System** - Record/playback games with timeline controls, favorites, export/import, duration limits, quality warnings
 - **Anti-Cheat (EAC)** - Easy Anti-Cheat integration with session management, peer validation, violation detection
 - **Vote Kick** - Player voting to remove disruptive players, configurable thresholds, host veto, cooldowns
+- **Map/Mode Voting** - End-of-match voting for next map/mode, tie breakers, timer, live results
 
 ### Next Up
 

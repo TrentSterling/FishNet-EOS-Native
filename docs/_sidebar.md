@@ -10,6 +10,7 @@
   * [Text Chat](chat.md)
   * [Host Migration](migration.md)
   * [Vote Kick](votekick.md)
+  * [Map/Mode Voting](mapvote.md)
 
 * **Social**
   * [Friends System](friends.md)
