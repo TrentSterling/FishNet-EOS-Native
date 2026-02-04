@@ -44,7 +44,7 @@ var (result, lobby) = await transport.HostLobbyAsync("ABC123");
 var (result, lobby) = await transport.HostLobbyAsync("my-awesome-lobby");
 ```
 
-### With Full Options
+### With Full Options (Property Style)
 
 ```csharp
 var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
@@ -57,6 +57,22 @@ var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
     IsPublic = true
 });
 ```
+
+### With Full Options (Fluent Style)
+
+```csharp
+var (result, lobby) = await transport.HostLobbyAsync(
+    new LobbyCreateOptions()
+        .WithName("Pro Players Only")
+        .WithGameMode("competitive")
+        .WithRegion("us-east")
+        .WithMaxPlayers(8)
+        .WithPassword("secret123")
+        .WithVoice(true)
+);
+```
+
+Both styles work identically - use whichever you prefer.
 
 ### With EOS LobbyId as Code
 

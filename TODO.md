@@ -227,11 +227,11 @@ Current development tasks for FishNet-EOS-Native.
 - [x] **Name search via attributes** - `SearchLobbiesByNameAsync()`, `JoinLobbyByNameAsync()`
 - Note: EOS LobbyId is auto-detected on join - works seamlessly with custom codes
 
-### Unified LobbyOptions API (Duck)
-- [ ] **Single `LobbyOptions` class** - Unified options for host, join, quickmatch (like Fusion's approach)
-- [ ] **BucketId field** - Add bucket ID support for lobby grouping/filtering (version, platform, etc.)
-- [ ] **Fluent builder pattern** - `new LobbyOptions().WithGameMode("ranked").WithBucketId("us-east")`
-- [ ] **Apply to all methods** - `HostLobbyAsync(options)`, `JoinLobbyAsync(code, options)`, `QuickMatchOrHostAsync(options)`
+### Unified LobbyOptions API (Duck) - Phase 1 Done
+- [ ] **Single `LobbyOptions` class** - Unified options for host, join, quickmatch (future Phase 2)
+- [x] **BucketId field** - Already exists in LobbyCreateOptions
+- [x] **Fluent builder pattern** - Added to LobbyCreateOptions (matches LobbySearchOptions style)
+- [x] **Apply to all methods** - LobbyCreateOptions for host, LobbySearchOptions for search/join
 - Example from Duck:
 ```csharp
 var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
