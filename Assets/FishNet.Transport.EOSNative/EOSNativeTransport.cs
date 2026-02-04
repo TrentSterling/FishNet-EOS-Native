@@ -6,9 +6,11 @@ using Epic.OnlineServices.P2P;
 using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Transporting;
+using FishNet.Connection;
 using FishNet.Transport.EOSNative.Logging;
 using FishNet.Transport.EOSNative.Lobbies;
 using FishNet.Transport.EOSNative.Migration;
+using FishNet.Transport.EOSNative.Offline;
 using FishNet.Transport.EOSNative.Voice;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -186,6 +188,75 @@ namespace FishNet.Transport.EOSNative
 
         private LocalConnectionState _serverState = LocalConnectionState.Stopped;
         private LocalConnectionState _clientState = LocalConnectionState.Stopped;
+
+        // Offline mode
+        private EOSOfflineServer _offlineServer;
+        private EOSOfflineClient _offlineClient;
+        private bool _isOfflineMode;
+
+        #endregion
+
+        #region Offline Mode
+
+        /// <summary>
+        /// Whether the transport is currently in offline/singleplayer mode.
+        /// In offline mode, no EOS connection is required.
+        /// </summary>
+        public bool IsOfflineMode => _isOfflineMode;
+
+        /// <summary>
+        /// Starts the transport in offline mode for singleplayer.
+        /// No EOS login required. Server and client run locally.
+        /// </summary>
+        public void StartOffline()
+        {
+            if (_serverState != LocalConnectionState.Stopped || _clientState != LocalConnectionState.Stopped)
+            {
+                NetworkManager.LogWarning("[EOSNativeTransport] Cannot start offline mode while server or client is running.");
+                return;
+            }
+
+            _isOfflineMode = true;
+
+            // Initialize offline sockets
+            _offlineServer = new EOSOfflineServer();
+            _offlineClient = new EOSOfflineClient();
+            _offlineServer.Initialize(this, _offlineClient);
+            _offlineClient.Initialize(this, _offlineServer);
+
+            EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", "Starting offline mode...");
+
+            // Start server
+            _offlineServer.StartConnection();
+            SetServerState(LocalConnectionState.Started);
+
+            // Start client (will connect immediately since server is started)
+            _offlineClient.StartConnection();
+            SetClientState(LocalConnectionState.Started);
+
+            EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", "Offline mode started. Server and client running locally.");
+        }
+
+        /// <summary>
+        /// Stops offline mode.
+        /// </summary>
+        public void StopOffline()
+        {
+            if (!_isOfflineMode)
+                return;
+
+            _offlineClient?.StopConnection();
+            _offlineServer?.StopConnection();
+
+            SetClientState(LocalConnectionState.Stopped);
+            SetServerState(LocalConnectionState.Stopped);
+
+            _offlineClient = null;
+            _offlineServer = null;
+            _isOfflineMode = false;
+
+            EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", "Offline mode stopped.");
+        }
 
         #endregion
 
@@ -977,6 +1048,11 @@ namespace FishNet.Transport.EOSNative
 
         public override RemoteConnectionState GetConnectionState(int connectionId)
         {
+            if (_isOfflineMode)
+            {
+                return _offlineServer?.GetConnectionState(connectionId) ?? RemoteConnectionState.Stopped;
+            }
+
             if (_server == null) return RemoteConnectionState.Stopped;
             return _server.GetConnectionState(connectionId);
         }
@@ -1264,6 +1340,12 @@ namespace FishNet.Transport.EOSNative
 
         public override void Shutdown()
         {
+            if (_isOfflineMode)
+            {
+                StopOffline();
+                return;
+            }
+
             StopClient();
             StopServer();
         }
@@ -1275,6 +1357,13 @@ namespace FishNet.Transport.EOSNative
         public override void SendToServer(byte channelId, ArraySegment<byte> segment)
         {
             if (_clientState != LocalConnectionState.Started) return;
+
+            // Offline mode
+            if (_isOfflineMode)
+            {
+                _offlineClient?.SendToServer(channelId, segment);
+                return;
+            }
 
             Channel channel = (Channel)channelId;
 
@@ -1291,6 +1380,14 @@ namespace FishNet.Transport.EOSNative
         public override void SendToClient(byte channelId, ArraySegment<byte> segment, int connectionId)
         {
             if (_serverState != LocalConnectionState.Started) return;
+
+            // Offline mode
+            if (_isOfflineMode)
+            {
+                _offlineServer?.SendToClient(channelId, segment, connectionId);
+                return;
+            }
+
             if (_server == null) return;
 
             Channel channel = (Channel)channelId;
@@ -1336,6 +1433,16 @@ namespace FishNet.Transport.EOSNative
 
         public override void IterateIncoming(bool server)
         {
+            // Offline mode
+            if (_isOfflineMode)
+            {
+                if (server)
+                    _offlineServer?.IterateIncoming();
+                else
+                    _offlineClient?.IterateIncoming();
+                return;
+            }
+
             if (server)
             {
                 // Process ClientHost incoming first
@@ -1413,6 +1520,10 @@ namespace FishNet.Transport.EOSNative
 
         public override bool IsLocalTransport(int connectionId)
         {
+            // In offline mode, all connections are local
+            if (_isOfflineMode)
+                return true;
+
             return connectionId == CLIENT_HOST_ID;
         }
 

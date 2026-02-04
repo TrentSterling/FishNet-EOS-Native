@@ -165,6 +165,27 @@ var (result, lobbies) = await transport.SearchLobbiesAsync(options);
 var (result, lobbies) = await transport.SearchLobbiesByNameAsync("Pro", exactMatch: false);
 ```
 
+### Offline Mode (Singleplayer)
+
+Run without EOS - no login required. Perfect for singleplayer, testing, or offline fallback.
+
+```csharp
+var transport = GetComponent<EOSNativeTransport>();
+
+// Start offline (server + client locally, no network)
+transport.StartOffline();
+
+// All FishNet features work normally
+// NetworkObjects, RPCs, SyncVars - all local
+
+// Check mode
+if (transport.IsOfflineMode) { }
+
+// Stop offline mode
+transport.StopOffline();
+// Or just: transport.Shutdown();
+```
+
 ### Testing with ParrelSync
 
 1. Main Editor: Host lobby
