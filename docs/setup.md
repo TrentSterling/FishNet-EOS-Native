@@ -179,6 +179,18 @@ DLL files should be configured automatically. Verify in Unity Inspector:
 
 ### Sample Scripts Have Errors
 
-**Cause:** EOS SDK samples may have compatibility issues.
+**Cause:** EOS SDK samples use old C# syntax that doesn't compile in modern Unity.
 
-**Fix:** Delete the `Samples` folder from the EOS SDK if not needed.
+**Fix:** Delete the `Samples` folder from the EOS SDK - it's not needed.
+
+```
+Assets/Plugins/EOSSDK/Samples/  ← DELETE THIS ENTIRE FOLDER
+```
+
+### DLLs Not Loading in Editor
+
+**Cause:** The transport manually loads EOS DLLs in the editor. The DLL must be findable.
+
+**Fix:** Ensure the DLL is in your Assets folder with correct platform settings:
+- `EOSSDK-Win64-Shipping.dll` - Set to Editor + Windows x64
+- Check Console for "Loading EOS SDK from:" message on play
