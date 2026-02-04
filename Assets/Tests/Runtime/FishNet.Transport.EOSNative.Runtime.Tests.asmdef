@@ -1,0 +1,21 @@
+{
+    "name": "FishNet.Transport.EOSNative.Runtime.Tests",
+    "rootNamespace": "FishNet.Transport.EOSNative.Tests.Runtime",
+    "references": [
+        "FishNet.Runtime",
+        "FishNet.Transport.EOSNative"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

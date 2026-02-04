@@ -48,5 +48,6 @@
 
 * **Reference**
   * [Debug Tools](debug.md)
+  * [Unit Testing](testing.md)
   * [API Constants](constants.md)
   * [Troubleshooting](troubleshooting.md)

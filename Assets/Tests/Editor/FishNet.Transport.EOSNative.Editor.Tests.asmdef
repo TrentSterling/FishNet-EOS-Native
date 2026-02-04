@@ -1,0 +1,23 @@
+{
+    "name": "FishNet.Transport.EOSNative.Editor.Tests",
+    "rootNamespace": "FishNet.Transport.EOSNative.Tests.Editor",
+    "references": [
+        "FishNet.Runtime",
+        "FishNet.Transport.EOSNative"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

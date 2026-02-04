@@ -87,7 +87,11 @@ Assets/FishNet.Transport.EOSNative/
 ├── EOSMapVoteManager.cs          # Map/mode voting system
 ├── EOSSpectatorMode.cs           # Spectator camera system
 ├── Editor/ (4 files) - EOSNativeTransportEditor, EOSNativeMenu, EOSSetupWizard, EOSDebugSettingsWindow
-└── Demo/ (5 files) - PlayerBall, NetworkPhysicsObject, PlayerSpawner, etc.
+├── Demo/ (5 files) - PlayerBall, NetworkPhysicsObject, PlayerSpawner, etc.
+│
+Assets/Tests/
+├── Editor/ - Edit Mode tests (pure C# logic)
+└── Runtime/ - Play Mode tests (MonoBehaviours)
 ```
 
 ## Quick Start
@@ -1090,6 +1094,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Match Rematch System** - Post-match rematch voting, host force, swap teams, consecutive limits
 - **Enhanced Achievements** - Progress tracking, stat-based triggers, unlock popups, icon loading, offline caching
 - **Enhanced Reconnection** - Session preservation, slot reservation, exponential backoff, late rejoin modes
+- **Unit Test Framework** - Edit Mode and Play Mode tests, assembly definitions, test coverage for core systems
 
 ### Next Up
 
