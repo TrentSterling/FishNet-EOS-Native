@@ -299,7 +299,7 @@ var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(options);
 - [x] `transport.StartOffline()` - Starts server + client locally
 - [x] `transport.IsOfflineMode` - Check if running offline
 - [x] `transport.StopOffline()` - Stop offline mode
-- [ ] `transport.OfflineFallback = true` - Auto-fallback if EOS fails (future)
+- [x] `transport.OfflineFallback = true` - Auto-fallback if EOS fails
 - [ ] Optional simulated latency/packet loss for testing (future)
 - Note: FishNet Pro charges for this - we give it free with EOS transport!
 
