@@ -831,6 +831,335 @@ namespace FishNet.Transport.EOSNative.Lobbies
     }
 
     /// <summary>
+    /// Unified lobby options that work for both creating and searching lobbies.
+    /// Duck's request: "One options class rules them all"
+    ///
+    /// Use the same options object for HostLobbyAsync, SearchLobbiesAsync, QuickMatchOrHostAsync, etc.
+    /// Fields that don't apply to a specific operation are gracefully ignored.
+    /// </summary>
+    public class LobbyOptions
+    {
+        #region Shared Fields (used by both Create and Search)
+
+        /// <summary>
+        /// Human-readable lobby name.
+        /// Create: Sets the lobby name attribute.
+        /// Search: Filters by exact name match.
+        /// </summary>
+        public string LobbyName;
+
+        /// <summary>
+        /// Game mode (e.g., "deathmatch", "coop", "ranked").
+        /// </summary>
+        public string GameMode;
+
+        /// <summary>
+        /// Map name.
+        /// </summary>
+        public string Map;
+
+        /// <summary>
+        /// Server region (e.g., "us-east", "eu-west").
+        /// </summary>
+        public string Region;
+
+        /// <summary>
+        /// Version bucket for matchmaking.
+        /// </summary>
+        public string BucketId;
+
+        /// <summary>
+        /// Maximum players.
+        /// Create: Sets lobby capacity.
+        /// Search: Filters by max capacity.
+        /// </summary>
+        public uint? MaxPlayers;
+
+        /// <summary>
+        /// Password for the lobby.
+        /// Create: Makes lobby password-protected.
+        /// Search: (not used for search filtering)
+        /// </summary>
+        public string Password;
+
+        /// <summary>
+        /// Skill level for matchmaking.
+        /// </summary>
+        public int? SkillLevel;
+
+        /// <summary>
+        /// Custom attributes.
+        /// </summary>
+        public Dictionary<string, string> Attributes;
+
+        #endregion
+
+        #region Create-Only Fields (ignored during search)
+
+        /// <summary>
+        /// Custom join code. If null, a random 4-digit code is generated.
+        /// Create-only.
+        /// </summary>
+        public string JoinCode;
+
+        /// <summary>
+        /// Use EOS-generated LobbyId as the join code.
+        /// Create-only.
+        /// </summary>
+        public bool UseEosLobbyId;
+
+        /// <summary>
+        /// Whether the lobby is publicly searchable (default: true).
+        /// Create-only.
+        /// </summary>
+        public bool IsPublic = true;
+
+        /// <summary>
+        /// Enable voice chat (default: true).
+        /// Create-only.
+        /// </summary>
+        public bool EnableVoice = true;
+
+        /// <summary>
+        /// Start with microphone muted.
+        /// Create-only.
+        /// </summary>
+        public bool StartMuted;
+
+        /// <summary>
+        /// Allow host migration (default: true).
+        /// Create-only.
+        /// </summary>
+        public bool AllowHostMigration = true;
+
+        /// <summary>
+        /// Allow crossplay (default: true).
+        /// Create-only.
+        /// </summary>
+        public bool AllowCrossplay = true;
+
+        #endregion
+
+        #region Search-Only Fields (ignored during create)
+
+        /// <summary>
+        /// Maximum search results (default: 10).
+        /// Search-only.
+        /// </summary>
+        public uint MaxResults = 10;
+
+        /// <summary>
+        /// Minimum players in lobby filter.
+        /// Search-only.
+        /// </summary>
+        public int? MinPlayers;
+
+        /// <summary>
+        /// Only return lobbies with available slots (default: true).
+        /// Search-only.
+        /// </summary>
+        public bool OnlyAvailable = true;
+
+        /// <summary>
+        /// Exclude password-protected lobbies.
+        /// Search-only.
+        /// </summary>
+        public bool ExcludePasswordProtected;
+
+        /// <summary>
+        /// Exclude lobbies where game is in progress.
+        /// Search-only.
+        /// </summary>
+        public bool ExcludeInProgress;
+
+        /// <summary>
+        /// Minimum skill level filter.
+        /// Search-only.
+        /// </summary>
+        public int? MinSkill;
+
+        /// <summary>
+        /// Maximum skill level filter.
+        /// Search-only.
+        /// </summary>
+        public int? MaxSkill;
+
+        #endregion
+
+        #region Fluent Builder Methods - Shared
+
+        public LobbyOptions WithName(string name) { LobbyName = name; return this; }
+        public LobbyOptions WithGameMode(string mode) { GameMode = mode; return this; }
+        public LobbyOptions WithMap(string map) { Map = map; return this; }
+        public LobbyOptions WithRegion(string region) { Region = region; return this; }
+        public LobbyOptions WithBucketId(string bucket) { BucketId = bucket; return this; }
+        public LobbyOptions WithMaxPlayers(uint max) { MaxPlayers = max; return this; }
+        public LobbyOptions WithPassword(string pass) { Password = pass; return this; }
+        public LobbyOptions WithSkillLevel(int skill) { SkillLevel = skill; return this; }
+        public LobbyOptions WithAttribute(string key, string value)
+        {
+            Attributes ??= new Dictionary<string, string>();
+            Attributes[key] = value;
+            return this;
+        }
+
+        #endregion
+
+        #region Fluent Builder Methods - Create-Only
+
+        public LobbyOptions WithJoinCode(string code) { JoinCode = code; return this; }
+        public LobbyOptions WithEosLobbyId() { UseEosLobbyId = true; return this; }
+        public LobbyOptions WithVoice(bool enabled = true) { EnableVoice = enabled; return this; }
+        public LobbyOptions WithMutedMic(bool muted = true) { StartMuted = muted; return this; }
+        public LobbyOptions WithHostMigration(bool enabled = true) { AllowHostMigration = enabled; return this; }
+        public LobbyOptions WithCrossplay(bool enabled = true) { AllowCrossplay = enabled; return this; }
+        public LobbyOptions AsPrivate() { IsPublic = false; return this; }
+        public LobbyOptions AsPublic() { IsPublic = true; return this; }
+
+        #endregion
+
+        #region Fluent Builder Methods - Search-Only
+
+        public LobbyOptions WithMaxResults(uint max) { MaxResults = max; return this; }
+        public LobbyOptions WithMinPlayers(int min) { MinPlayers = min; return this; }
+        public LobbyOptions ExcludeFull() { OnlyAvailable = true; return this; }
+        public LobbyOptions IncludeFull() { OnlyAvailable = false; return this; }
+        public LobbyOptions ExcludePassworded() { ExcludePasswordProtected = true; return this; }
+        public LobbyOptions ExcludeGamesInProgress() { ExcludeInProgress = true; return this; }
+        public LobbyOptions WithMinSkill(int min) { MinSkill = min; return this; }
+        public LobbyOptions WithMaxSkill(int max) { MaxSkill = max; return this; }
+        public LobbyOptions WithSkillRange(int min, int max) { MinSkill = min; MaxSkill = max; return this; }
+
+        #endregion
+
+        #region Conversion Methods
+
+        /// <summary>
+        /// Convert to LobbyCreateOptions for hosting.
+        /// </summary>
+        public LobbyCreateOptions ToCreateOptions()
+        {
+            var options = new LobbyCreateOptions
+            {
+                LobbyName = LobbyName,
+                GameMode = GameMode,
+                Map = Map,
+                Region = Region,
+                BucketId = BucketId ?? "v1",
+                MaxPlayers = MaxPlayers ?? 4,
+                Password = Password,
+                SkillLevel = SkillLevel,
+                JoinCode = JoinCode,
+                UseEosLobbyId = UseEosLobbyId,
+                IsPublic = IsPublic,
+                EnableVoice = EnableVoice,
+                StartMuted = StartMuted,
+                AllowHostMigration = AllowHostMigration,
+                AllowCrossplay = AllowCrossplay,
+                Attributes = Attributes != null ? new Dictionary<string, string>(Attributes) : null
+            };
+            return options;
+        }
+
+        /// <summary>
+        /// Convert to LobbySearchOptions for searching.
+        /// </summary>
+        public LobbySearchOptions ToSearchOptions()
+        {
+            var options = new LobbySearchOptions
+            {
+                MaxResults = MaxResults,
+                BucketId = BucketId,
+                OnlyAvailable = OnlyAvailable,
+                ExcludePasswordProtected = ExcludePasswordProtected,
+                ExcludeInProgress = ExcludeInProgress
+            };
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(GameMode))
+                options = options.WithGameMode(GameMode);
+            if (!string.IsNullOrEmpty(Map))
+                options = options.WithMap(Map);
+            if (!string.IsNullOrEmpty(Region))
+                options = options.WithRegion(Region);
+            if (!string.IsNullOrEmpty(LobbyName))
+                options = options.WithLobbyName(LobbyName);
+            if (MinPlayers.HasValue)
+                options = options.WithMinPlayers(MinPlayers.Value);
+            if (MaxPlayers.HasValue)
+                options = options.WithMaxPlayers((int)MaxPlayers.Value);
+            if (MinSkill.HasValue)
+                options = options.WithMinSkill(MinSkill.Value);
+            if (MaxSkill.HasValue)
+                options = options.WithMaxSkill(MaxSkill.Value);
+
+            // Copy custom attributes
+            if (Attributes != null)
+            {
+                foreach (var kvp in Attributes)
+                    options = options.WithAttribute(kvp.Key, kvp.Value);
+            }
+
+            return options;
+        }
+
+        /// <summary>
+        /// Implicit conversion to LobbyCreateOptions.
+        /// </summary>
+        public static implicit operator LobbyCreateOptions(LobbyOptions options)
+        {
+            return options?.ToCreateOptions();
+        }
+
+        /// <summary>
+        /// Implicit conversion to LobbySearchOptions.
+        /// </summary>
+        public static implicit operator LobbySearchOptions(LobbyOptions options)
+        {
+            return options?.ToSearchOptions();
+        }
+
+        #endregion
+
+        #region Factory Methods
+
+        /// <summary>
+        /// Create options preset for quick match.
+        /// </summary>
+        public static LobbyOptions QuickMatch()
+        {
+            return new LobbyOptions
+            {
+                MaxResults = 50,
+                OnlyAvailable = true,
+                ExcludePasswordProtected = true,
+                ExcludeInProgress = true
+            };
+        }
+
+        /// <summary>
+        /// Create options for a specific game mode.
+        /// </summary>
+        public static LobbyOptions ForGameMode(string gameMode)
+        {
+            return new LobbyOptions().WithGameMode(gameMode);
+        }
+
+        /// <summary>
+        /// Create options for skill-based matchmaking.
+        /// </summary>
+        public static LobbyOptions ForSkillRange(int playerSkill, int range = 200)
+        {
+            return new LobbyOptions()
+                .WithSkillRange(playerSkill - range, playerSkill + range)
+                .ExcludePassworded()
+                .ExcludeGamesInProgress();
+        }
+
+        #endregion
+    }
+
+    /// <summary>
     /// Standard lobby attribute keys.
     /// </summary>
     public static class LobbyAttributes

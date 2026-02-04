@@ -141,6 +141,17 @@ var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
         .ExcludeFull()
 );
 
+// Unified LobbyOptions - same options work for host and quick match
+var options = new LobbyOptions
+{
+    LobbyName = "Pro Players Only",
+    GameMode = "competitive",
+    Region = "us-east",
+    MaxPlayers = 8
+};
+var (result, lobby) = await transport.HostLobbyAsync(options);
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(options);
+
 // Leave
 await transport.LeaveLobbyAsync();
 

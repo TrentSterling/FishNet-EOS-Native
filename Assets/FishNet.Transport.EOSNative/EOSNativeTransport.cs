@@ -717,6 +717,55 @@ namespace FishNet.Transport.EOSNative
         /// Quick match OR auto-host - finds any available lobby and joins, OR hosts a new one if none found.
         /// This is the recommended way to implement "Play Now" functionality.
         /// </summary>
+        /// <param name="options">Unified options for both searching and hosting. Same options used for both operations.</param>
+        /// <returns>Result, lobby data, and whether we became the host.</returns>
+        /// <example>
+        /// var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(new LobbyOptions
+        /// {
+        ///     GameMode = "deathmatch",
+        ///     Region = "us-east",
+        ///     MaxPlayers = 8
+        /// });
+        /// </example>
+        public async Task<(Result result, LobbyData lobby, bool didHost)> QuickMatchOrHostAsync(LobbyOptions options)
+        {
+            if (options == null)
+                return await QuickMatchOrHostAsync((LobbySearchOptions)null);
+
+            // Extract both create and search options from the unified options
+            var createOptions = options.ToCreateOptions();
+            var searchOptions = options.ToSearchOptions();
+
+            // Apply defaults
+            if (createOptions.MaxPlayers == 0)
+                createOptions.MaxPlayers = _defaultMaxPlayers;
+            if (string.IsNullOrEmpty(createOptions.BucketId))
+                createOptions.BucketId = _lobbyBucket;
+
+            var (result, lobby, didHost) = await LobbyManager.QuickMatchOrHostAsync(createOptions, searchOptions);
+
+            if (result == Result.Success)
+            {
+                if (didHost)
+                {
+                    StartHost();
+                    EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", $"➜ QuickMatchOrHost: Hosting {lobby.JoinCode}");
+                }
+                else if (!string.IsNullOrEmpty(lobby.OwnerPuid))
+                {
+                    RemoteProductUserId = lobby.OwnerPuid;
+                    StartClientOnly();
+                    EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", $"➜ QuickMatchOrHost: Joined {lobby.JoinCode}");
+                }
+            }
+
+            return (result, lobby, didHost);
+        }
+
+        /// <summary>
+        /// Quick match OR auto-host - finds any available lobby and joins, OR hosts a new one if none found.
+        /// This is the recommended way to implement "Play Now" functionality.
+        /// </summary>
         /// <param name="searchOptions">Optional search filters (game mode, region, etc.). If null, finds any available lobby.</param>
         /// <returns>Result, lobby data, and whether we became the host.</returns>
         public async Task<(Result result, LobbyData lobby, bool didHost)> QuickMatchOrHostAsync(LobbySearchOptions searchOptions = null)

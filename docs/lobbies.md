@@ -163,6 +163,53 @@ Available filters:
 
 If no matching lobby is found, one is automatically created with those settings.
 
+### Unified LobbyOptions
+
+Use a single `LobbyOptions` object for both hosting and quick matching. The same options work for both creating and searching:
+
+```csharp
+// Define once, use for both
+var options = new LobbyOptions
+{
+    LobbyName = "Pro Players Only",
+    GameMode = "competitive",
+    Region = "us-east",
+    MaxPlayers = 8
+};
+
+// Host with these options
+var (result, lobby) = await transport.HostLobbyAsync(options);
+
+// Or quick match with the same options
+var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(options);
+```
+
+Fluent style also works:
+
+```csharp
+var options = new LobbyOptions()
+    .WithName("Pro Players Only")
+    .WithGameMode("competitive")
+    .WithRegion("us-east")
+    .WithMaxPlayers(8);
+```
+
+`LobbyOptions` includes fields for both create and search operations:
+
+| Field | Used For | Description |
+|-------|----------|-------------|
+| `LobbyName` | Create | Display name for the lobby |
+| `GameMode` | Both | Game mode filter/attribute |
+| `Map` | Both | Map filter/attribute |
+| `Region` | Both | Region filter/attribute |
+| `MaxPlayers` | Both | Max capacity / capacity filter |
+| `BucketId` | Both | Version/platform grouping |
+| `UseEosLobbyId` | Create | Use EOS-generated ID as code |
+| `EnableVoice` | Create | Enable voice chat |
+| `AllowHostMigration` | Create | Allow host migration |
+| `MaxResults` | Search | Limit search results |
+| `ExcludePasswordProtected` | Search | Only public lobbies |
+
 ## Searching for Lobbies
 
 ```csharp
