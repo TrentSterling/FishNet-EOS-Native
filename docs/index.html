@@ -247,22 +247,20 @@
       --theme-color: #ffff00;
     }
 
-    /* Theme switcher styles */
+    /* Theme switcher styles - in sidebar below title */
     .theme-switcher {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      z-index: 999;
       display: flex;
-      gap: 4px;
+      gap: 6px;
       flex-wrap: wrap;
-      max-width: 200px;
-      justify-content: flex-end;
+      justify-content: center;
+      padding: 0.75rem 1rem;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border);
     }
 
     .theme-btn {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       border: 2px solid var(--border);
       cursor: pointer;
@@ -271,8 +269,8 @@
     }
 
     .theme-btn:hover {
-      transform: scale(1.15);
-      box-shadow: 0 0 10px var(--accent-glow);
+      transform: scale(1.2);
+      box-shadow: 0 0 8px var(--accent-glow);
     }
 
     .theme-btn.active {
@@ -293,10 +291,10 @@
     .theme-btn::after {
       content: attr(title);
       position: absolute;
-      bottom: -24px;
+      top: -28px;
       left: 50%;
       transform: translateX(-50%);
-      background: var(--bg-tertiary);
+      background: var(--bg-primary);
       color: var(--text-primary);
       padding: 2px 6px;
       border-radius: 4px;
@@ -305,23 +303,11 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s;
+      z-index: 10;
     }
 
     .theme-btn:hover::after {
       opacity: 1;
-    }
-
-    @media (max-width: 768px) {
-      .theme-switcher {
-        top: auto;
-        bottom: 50px;
-        right: 10px;
-        max-width: 150px;
-      }
-      .theme-btn {
-        width: 24px;
-        height: 24px;
-      }
     }
 
     * {
@@ -936,44 +922,11 @@
 <body>
   <div id="app"></div>
 
-  <!-- Theme Switcher -->
-  <div class="theme-switcher">
-    <button class="theme-btn" data-theme="dark" title="Dark"></button>
-    <button class="theme-btn" data-theme="white" title="White"></button>
-    <button class="theme-btn" data-theme="black" title="OLED"></button>
-    <button class="theme-btn" data-theme="purple" title="Purple"></button>
-    <button class="theme-btn" data-theme="neon" title="Neon"></button>
-    <button class="theme-btn" data-theme="blue" title="Blue"></button>
-    <button class="theme-btn" data-theme="pink" title="Pink"></button>
-    <button class="theme-btn" data-theme="pastel" title="Pastel"></button>
-    <button class="theme-btn" data-theme="contrast" title="Hi-Con"></button>
-  </div>
-
   <script>
-    // Theme switcher
+    // Theme switcher - apply saved theme immediately
     (function() {
       const savedTheme = localStorage.getItem('docs-theme') || 'dark';
       document.documentElement.setAttribute('data-theme', savedTheme);
-
-      document.addEventListener('DOMContentLoaded', function() {
-        const buttons = document.querySelectorAll('.theme-btn');
-
-        // Mark active theme
-        buttons.forEach(btn => {
-          if (btn.dataset.theme === savedTheme) {
-            btn.classList.add('active');
-          }
-
-          btn.addEventListener('click', function() {
-            const theme = this.dataset.theme;
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('docs-theme', theme);
-
-            buttons.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-          });
-        });
-      });
     })();
   </script>
 
@@ -1012,8 +965,54 @@
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-csharp.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
-  <!-- Sidebar arrow expand/collapse tracking -->
+  <!-- Sidebar enhancements: theme switcher + arrow tracking -->
   <script>
+    // Theme switcher - inject into sidebar
+    function setupThemeSwitcher() {
+      const sidebar = document.querySelector('.sidebar');
+      if (!sidebar || document.querySelector('.theme-switcher')) return;
+
+      const savedTheme = localStorage.getItem('docs-theme') || 'dark';
+      const themes = [
+        { id: 'dark', title: 'Dark' },
+        { id: 'white', title: 'White' },
+        { id: 'black', title: 'OLED' },
+        { id: 'purple', title: 'Purple' },
+        { id: 'neon', title: 'Neon' },
+        { id: 'blue', title: 'Blue' },
+        { id: 'pink', title: 'Pink' },
+        { id: 'pastel', title: 'Pastel' },
+        { id: 'contrast', title: 'Hi-Con' }
+      ];
+
+      // Create theme switcher container
+      const switcher = document.createElement('div');
+      switcher.className = 'theme-switcher';
+
+      themes.forEach(theme => {
+        const btn = document.createElement('button');
+        btn.className = 'theme-btn' + (theme.id === savedTheme ? ' active' : '');
+        btn.dataset.theme = theme.id;
+        btn.title = theme.title;
+        btn.addEventListener('click', function() {
+          document.documentElement.setAttribute('data-theme', theme.id);
+          localStorage.setItem('docs-theme', theme.id);
+          document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+        });
+        switcher.appendChild(btn);
+      });
+
+      // Insert after app-name-link (the title)
+      const appName = sidebar.querySelector('.app-name-link');
+      if (appName && appName.parentNode) {
+        appName.parentNode.insertBefore(switcher, appName.nextSibling);
+      } else {
+        sidebar.insertBefore(switcher, sidebar.firstChild);
+      }
+    }
+
+    // Sidebar arrow expand/collapse tracking
     function setupSidebarArrows() {
       const sidebar = document.querySelector('.sidebar-nav');
       if (!sidebar) return;
@@ -1050,6 +1049,7 @@
 
     // Hook into Docsify
     window.$docsify.plugins = (window.$docsify.plugins || []).concat(function(hook) {
+      hook.ready(setupThemeSwitcher);
       hook.doneEach(setupSidebarArrows);
     });
   </script>
