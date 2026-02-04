@@ -294,6 +294,15 @@ var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(options);
 
 ## Future Considerations
 
+### Offline Mode (FishNet Pro Killer Feature) ✅ DONE
+- [x] **Implement EOSOfflineServer/Client** - Local loopback, no EOS needed
+- [x] `transport.StartOffline()` - Starts server + client locally
+- [x] `transport.IsOfflineMode` - Check if running offline
+- [x] `transport.StopOffline()` - Stop offline mode
+- [ ] `transport.OfflineFallback = true` - Auto-fallback if EOS fails (future)
+- [ ] Optional simulated latency/packet loss for testing (future)
+- Note: FishNet Pro charges for this - we give it free with EOS transport!
+
 ### v1.1.0 - Planned Enhancements
 - [ ] Voice recording in replays
 - [ ] Replay sharing via cloud (shareable codes)
@@ -304,6 +313,21 @@ var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(options);
 - [ ] Test on actual Android device
 - [ ] Test Quest crossplay with Windows
 - [ ] iOS testing
+
+### Quest-Specific Issues (from Discord - Knot)
+- **OnApplicationQuit doesn't fire on Quest** - Can't send leave message on quit
+- **Host migration timeout** - If host quits without leave, EOS takes ~30 seconds to timeout
+- Workaround: Fire leave on `OnApplicationPause` / `OnApplicationFocus(false)`
+- Quest has a "save event" before quit - investigate for leave message
+- Goal: Match Photon's host migration UX
+
+### Host Migration Optimization Notes (from Discord)
+- **Object pooling hack** - Pool objects without SetActive(false), freeze in place during migration
+- **SyncVar caching** - We cache to structs every frame (generics, not reflection)
+- **Knot's approach** - Uses reflection to get SyncVar<> fields, saves on OnPromoted
+- **Our approach** - Save continuously, OnPromoted was "too late" for some reason (order issue?)
+- **Performance** - Reflection is fine for <1000 SyncVars, FishNet would lag first
+- **Investigate** - Can we get SyncVars without reflection on nested NetworkBehaviours?
 
 ### Stats-Based Name Storage (Optional)
 Store display names via 20 EOS stats for DeviceID users:
