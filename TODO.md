@@ -39,7 +39,7 @@ Current development tasks for FishNet-EOS-Native.
 ## Quick Wins (v1.0.x)
 
 ### UX Polish
-- [ ] **Copy Lobby Code to Clipboard** - One-click share button in UI
+- [x] **Copy Lobby Code to Clipboard** - One-click share button in UI
 - [ ] **Player Color System** - Auto-assign colors on join, display in UI/nameplates
 - [ ] **AFK Detection** - Track idle time, auto-kick option for hosts
 
