@@ -129,6 +129,63 @@ namespace FishNet.Transport.EOSNative.Lobbies
         private bool _isRefreshing;
         private bool _refreshPending;
 
+        // First-to-join tracking (PUID of first non-host member to join)
+        private string _firstToJoinPuid;
+        private List<string> _joinOrder = new List<string>();
+
+        #endregion
+
+        #region First-to-Join API
+
+        /// <summary>
+        /// The PUID of the first non-host player to join the lobby.
+        /// </summary>
+        public string FirstToJoinPuid => _firstToJoinPuid;
+
+        /// <summary>
+        /// Check if a player was the first to join (non-host).
+        /// </summary>
+        public bool IsFirstToJoin(string puid)
+        {
+            return !string.IsNullOrEmpty(_firstToJoinPuid) && _firstToJoinPuid == puid;
+        }
+
+        /// <summary>
+        /// Get the join order number for a player (1 = first, 2 = second, etc.)
+        /// Returns 0 for host, -1 if not found.
+        /// </summary>
+        public int GetJoinOrder(string puid)
+        {
+            if (string.IsNullOrEmpty(puid)) return -1;
+            if (IsInLobby && puid == CurrentLobby.OwnerPuid) return 0;
+            int index = _joinOrder.IndexOf(puid);
+            return index >= 0 ? index + 1 : -1;
+        }
+
+        /// <summary>
+        /// Get the join order list (excluding host).
+        /// </summary>
+        public IReadOnlyList<string> JoinOrder => _joinOrder;
+
+        private void TrackJoin(string puid)
+        {
+            // Don't track host
+            if (IsInLobby && puid == CurrentLobby.OwnerPuid) return;
+            if (_joinOrder.Contains(puid)) return;
+
+            _joinOrder.Add(puid);
+            if (_firstToJoinPuid == null)
+            {
+                _firstToJoinPuid = puid;
+            }
+        }
+
+        private void ResetJoinTracking()
+        {
+            _firstToJoinPuid = null;
+            _joinOrder.Clear();
+        }
+
         #endregion
 
         #region Unity Lifecycle
@@ -1163,6 +1220,7 @@ namespace FishNet.Transport.EOSNative.Lobbies
             }
 
             EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", "Left lobby");
+            ResetJoinTracking();
             OnLobbyLeft?.Invoke();
 
             return result.ResultCode;
@@ -1587,6 +1645,7 @@ namespace FishNet.Transport.EOSNative.Lobbies
             {
                 case LobbyMemberStatus.Joined:
                     EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", $" Member joined: {memberPuid}");
+                    TrackJoin(memberPuid);
                     OnMemberJoined?.Invoke(new LobbyMemberData { Puid = memberPuid });
                     break;
 

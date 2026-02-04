@@ -49,6 +49,9 @@ namespace FishNet.Transport.EOSNative
         private const string PREFS_FRIENDS_KEY = "EOSPlayerRegistry_Friends";
         private const string PREFS_BLOCKED_KEY = "EOSPlayerRegistry_Blocked";
         private const string PREFS_NOTES_KEY = "EOSPlayerRegistry_Notes";
+        private const string PREFS_TIMEPLAYED_KEY = "EOSPlayerRegistry_TimePlayed";
+        private const string PREFS_COLORS_KEY = "EOSPlayerRegistry_Colors";
+        private const string PREFS_TAGS_KEY = "EOSPlayerRegistry_Tags";
         private const string CLOUD_FRIENDS_FILE = "local_friends.json";
         private const string CLOUD_BLOCKED_FILE = "blocked_players.json";
         private const int MAX_CACHED_PLAYERS = 500; // Limit to prevent bloat
@@ -100,10 +103,44 @@ namespace FishNet.Transport.EOSNative
         // Platform IDs for players (PUID -> platform code like "WIN", "AND", etc.)
         private Dictionary<string, string> _platforms = new();
 
+        // Time played together in seconds (PUID -> total seconds)
+        private Dictionary<string, float> _timePlayed = new();
+
+        // Player colors (PUID -> color index 0-11)
+        private Dictionary<string, int> _playerColors = new();
+
+        // Player tags assigned by host (PUID -> tag string)
+        private Dictionary<string, string> _playerTags = new();
+
+        // Session start times for time tracking (PUID -> session start)
+        private Dictionary<string, float> _sessionStartTimes = new();
+
+        // Available player colors
+        private static readonly Color[] PlayerColors = new Color[]
+        {
+            new Color(0.9f, 0.3f, 0.3f),  // Red
+            new Color(0.3f, 0.6f, 0.9f),  // Blue
+            new Color(0.3f, 0.9f, 0.4f),  // Green
+            new Color(0.9f, 0.9f, 0.3f),  // Yellow
+            new Color(0.9f, 0.5f, 0.2f),  // Orange
+            new Color(0.7f, 0.3f, 0.9f),  // Purple
+            new Color(0.3f, 0.9f, 0.9f),  // Cyan
+            new Color(0.9f, 0.4f, 0.7f),  // Pink
+            new Color(0.6f, 0.4f, 0.2f),  // Brown
+            new Color(0.5f, 0.8f, 0.5f),  // Lime
+            new Color(0.4f, 0.4f, 0.7f),  // Indigo
+            new Color(0.8f, 0.8f, 0.8f),  // White/Gray
+        };
+
+        private int _nextColorIndex = 0;
+
         private bool _isDirty;
         private bool _friendsDirty;
         private bool _blockedDirty;
         private bool _notesDirty;
+        private bool _timePlayedDirty;
+        private bool _colorsDirty;
+        private bool _tagsDirty;
 
         // Cloud sync state
         private bool _cloudSyncEnabled = true;
@@ -171,6 +208,9 @@ namespace FishNet.Transport.EOSNative
             LoadFriends();
             LoadBlocked();
             LoadNotes();
+            LoadColors();
+            LoadTags();
+            LoadTimePlayed();
             CleanupExpiredEntries();
         }
 
@@ -436,6 +476,246 @@ namespace FishNet.Transport.EOSNative
                 "OVR" => "Quest",
                 _ => "Unknown"
             };
+        }
+
+        #endregion
+
+        #region Player Colors API
+
+        /// <summary>
+        /// Get the color assigned to a player. Auto-assigns if not set.
+        /// </summary>
+        public Color GetPlayerColor(string puid)
+        {
+            if (string.IsNullOrEmpty(puid)) return PlayerColors[0];
+
+            string key = TruncatePuid(puid);
+            if (!_playerColors.TryGetValue(key, out int colorIndex))
+            {
+                colorIndex = AssignNextColor(key);
+            }
+            return PlayerColors[colorIndex % PlayerColors.Length];
+        }
+
+        /// <summary>
+        /// Get the color index for a player.
+        /// </summary>
+        public int GetPlayerColorIndex(string puid)
+        {
+            if (string.IsNullOrEmpty(puid)) return 0;
+            string key = TruncatePuid(puid);
+            return _playerColors.TryGetValue(key, out int idx) ? idx : 0;
+        }
+
+        /// <summary>
+        /// Set a specific color for a player.
+        /// </summary>
+        public void SetPlayerColor(string puid, int colorIndex)
+        {
+            if (string.IsNullOrEmpty(puid)) return;
+            string key = TruncatePuid(puid);
+            _playerColors[key] = colorIndex % PlayerColors.Length;
+            _colorsDirty = true;
+            SaveColors();
+        }
+
+        /// <summary>
+        /// Get all available player colors.
+        /// </summary>
+        public static Color[] GetAvailableColors() => PlayerColors;
+
+        private int AssignNextColor(string key)
+        {
+            int colorIndex = _nextColorIndex;
+            _playerColors[key] = colorIndex;
+            _nextColorIndex = (_nextColorIndex + 1) % PlayerColors.Length;
+            _colorsDirty = true;
+            SaveColors();
+            return colorIndex;
+        }
+
+        private void LoadColors()
+        {
+            string json = PlayerPrefs.GetString(PREFS_COLORS_KEY, "");
+            if (!string.IsNullOrEmpty(json))
+            {
+                _playerColors = DeserializeDictInt(json);
+                _nextColorIndex = _playerColors.Count % PlayerColors.Length;
+            }
+        }
+
+        private void SaveColors()
+        {
+            if (!_colorsDirty) return;
+            PlayerPrefs.SetString(PREFS_COLORS_KEY, SerializeDictInt(_playerColors));
+            PlayerPrefs.Save();
+            _colorsDirty = false;
+        }
+
+        #endregion
+
+        #region Player Tags API
+
+        /// <summary>
+        /// Get the tag assigned to a player by the host.
+        /// </summary>
+        public string GetPlayerTag(string puid)
+        {
+            if (string.IsNullOrEmpty(puid)) return null;
+            string key = TruncatePuid(puid);
+            return _playerTags.TryGetValue(key, out string tag) ? tag : null;
+        }
+
+        /// <summary>
+        /// Set a tag for a player (host only typically).
+        /// </summary>
+        public void SetPlayerTag(string puid, string tag)
+        {
+            if (string.IsNullOrEmpty(puid)) return;
+            string key = TruncatePuid(puid);
+
+            if (string.IsNullOrEmpty(tag))
+            {
+                _playerTags.Remove(key);
+            }
+            else
+            {
+                _playerTags[key] = tag;
+            }
+            _tagsDirty = true;
+            SaveTags();
+        }
+
+        /// <summary>
+        /// Clear a player's tag.
+        /// </summary>
+        public void ClearPlayerTag(string puid)
+        {
+            SetPlayerTag(puid, null);
+        }
+
+        /// <summary>
+        /// Get all players with tags.
+        /// </summary>
+        public IReadOnlyDictionary<string, string> GetAllTags() => _playerTags;
+
+        private void LoadTags()
+        {
+            string json = PlayerPrefs.GetString(PREFS_TAGS_KEY, "");
+            if (!string.IsNullOrEmpty(json))
+            {
+                _playerTags = DeserializeDictString(json);
+            }
+        }
+
+        private void SaveTags()
+        {
+            if (!_tagsDirty) return;
+            PlayerPrefs.SetString(PREFS_TAGS_KEY, SerializeDictString(_playerTags));
+            PlayerPrefs.Save();
+            _tagsDirty = false;
+        }
+
+        #endregion
+
+        #region Time Played Together API
+
+        /// <summary>
+        /// Start tracking play time with a player.
+        /// </summary>
+        public void StartPlaySession(string puid)
+        {
+            if (string.IsNullOrEmpty(puid)) return;
+            string key = TruncatePuid(puid);
+            _sessionStartTimes[key] = Time.realtimeSinceStartup;
+        }
+
+        /// <summary>
+        /// End tracking play time with a player and accumulate time.
+        /// </summary>
+        public void EndPlaySession(string puid)
+        {
+            if (string.IsNullOrEmpty(puid)) return;
+            string key = TruncatePuid(puid);
+
+            if (_sessionStartTimes.TryGetValue(key, out float startTime))
+            {
+                float sessionDuration = Time.realtimeSinceStartup - startTime;
+                if (!_timePlayed.ContainsKey(key))
+                    _timePlayed[key] = 0f;
+
+                _timePlayed[key] += sessionDuration;
+                _sessionStartTimes.Remove(key);
+                _timePlayedDirty = true;
+                SaveTimePlayed();
+            }
+        }
+
+        /// <summary>
+        /// Get total time played with a player in seconds.
+        /// </summary>
+        public float GetTimePlayedWith(string puid)
+        {
+            if (string.IsNullOrEmpty(puid)) return 0f;
+            string key = TruncatePuid(puid);
+
+            float total = _timePlayed.TryGetValue(key, out float saved) ? saved : 0f;
+
+            // Add current session if active
+            if (_sessionStartTimes.TryGetValue(key, out float startTime))
+            {
+                total += Time.realtimeSinceStartup - startTime;
+            }
+
+            return total;
+        }
+
+        /// <summary>
+        /// Get formatted time played string (e.g., "2h 30m").
+        /// </summary>
+        public string GetTimePlayedFormatted(string puid)
+        {
+            float seconds = GetTimePlayedWith(puid);
+            if (seconds < 60) return "< 1m";
+
+            int hours = (int)(seconds / 3600);
+            int minutes = (int)((seconds % 3600) / 60);
+
+            if (hours > 0)
+                return $"{hours}h {minutes}m";
+            return $"{minutes}m";
+        }
+
+        /// <summary>
+        /// Get players sorted by time played together.
+        /// </summary>
+        public List<(string puid, string name, float seconds)> GetPlayersByTimePlayed()
+        {
+            var result = new List<(string, string, float)>();
+            foreach (var kvp in _timePlayed)
+            {
+                string name = GetDisplayName(kvp.Key);
+                result.Add((kvp.Key, name, kvp.Value));
+            }
+            result.Sort((a, b) => b.seconds.CompareTo(a.seconds));
+            return result;
+        }
+
+        private void LoadTimePlayed()
+        {
+            string json = PlayerPrefs.GetString(PREFS_TIMEPLAYED_KEY, "");
+            if (!string.IsNullOrEmpty(json))
+            {
+                _timePlayed = DeserializeDictFloat(json);
+            }
+        }
+
+        private void SaveTimePlayed()
+        {
+            if (!_timePlayedDirty) return;
+            PlayerPrefs.SetString(PREFS_TIMEPLAYED_KEY, SerializeDictFloat(_timePlayed));
+            PlayerPrefs.Save();
+            _timePlayedDirty = false;
         }
 
         #endregion
@@ -1462,6 +1742,125 @@ namespace FishNet.Transport.EOSNative
         {
             public string puid;
             public string name;
+        }
+
+        [Serializable]
+        private class SerializableIntDict
+        {
+            public string[] keys;
+            public int[] values;
+        }
+
+        [Serializable]
+        private class SerializableFloatDict
+        {
+            public string[] keys;
+            public float[] values;
+        }
+
+        private string SerializeDictInt(Dictionary<string, int> dict)
+        {
+            var wrapper = new SerializableIntDict
+            {
+                keys = new string[dict.Count],
+                values = new int[dict.Count]
+            };
+            int i = 0;
+            foreach (var kvp in dict)
+            {
+                wrapper.keys[i] = kvp.Key;
+                wrapper.values[i] = kvp.Value;
+                i++;
+            }
+            return JsonUtility.ToJson(wrapper);
+        }
+
+        private Dictionary<string, int> DeserializeDictInt(string json)
+        {
+            var result = new Dictionary<string, int>();
+            try
+            {
+                var wrapper = JsonUtility.FromJson<SerializableIntDict>(json);
+                if (wrapper?.keys != null && wrapper.values != null)
+                {
+                    for (int i = 0; i < wrapper.keys.Length && i < wrapper.values.Length; i++)
+                    {
+                        result[wrapper.keys[i]] = wrapper.values[i];
+                    }
+                }
+            }
+            catch { }
+            return result;
+        }
+
+        private string SerializeDictFloat(Dictionary<string, float> dict)
+        {
+            var wrapper = new SerializableFloatDict
+            {
+                keys = new string[dict.Count],
+                values = new float[dict.Count]
+            };
+            int i = 0;
+            foreach (var kvp in dict)
+            {
+                wrapper.keys[i] = kvp.Key;
+                wrapper.values[i] = kvp.Value;
+                i++;
+            }
+            return JsonUtility.ToJson(wrapper);
+        }
+
+        private Dictionary<string, float> DeserializeDictFloat(string json)
+        {
+            var result = new Dictionary<string, float>();
+            try
+            {
+                var wrapper = JsonUtility.FromJson<SerializableFloatDict>(json);
+                if (wrapper?.keys != null && wrapper.values != null)
+                {
+                    for (int i = 0; i < wrapper.keys.Length && i < wrapper.values.Length; i++)
+                    {
+                        result[wrapper.keys[i]] = wrapper.values[i];
+                    }
+                }
+            }
+            catch { }
+            return result;
+        }
+
+        private string SerializeDictString(Dictionary<string, string> dict)
+        {
+            var wrapper = new SerializableDict
+            {
+                keys = new string[dict.Count],
+                values = new string[dict.Count]
+            };
+            int i = 0;
+            foreach (var kvp in dict)
+            {
+                wrapper.keys[i] = kvp.Key;
+                wrapper.values[i] = kvp.Value;
+                i++;
+            }
+            return JsonUtility.ToJson(wrapper);
+        }
+
+        private Dictionary<string, string> DeserializeDictString(string json)
+        {
+            var result = new Dictionary<string, string>();
+            try
+            {
+                var wrapper = JsonUtility.FromJson<SerializableDict>(json);
+                if (wrapper?.keys != null && wrapper.values != null)
+                {
+                    for (int i = 0; i < wrapper.keys.Length && i < wrapper.values.Length; i++)
+                    {
+                        result[wrapper.keys[i]] = wrapper.values[i];
+                    }
+                }
+            }
+            catch { }
+            return result;
         }
 
         #endregion
