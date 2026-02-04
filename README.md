@@ -16,9 +16,10 @@ Existing EOS transports for FishNet depend on the [PlayEveryWare EOS Plugin](htt
 ### Networking
 - **Zero-Config Setup** - Add one component, everything auto-wires
 - **P2P Transport** - Reliable and unreliable channels via EOS relay
+- **Offline Mode** - Singleplayer without EOS, auto-fallback when offline
 - **Packet Fragmentation** - Handles packets >1170 bytes automatically
 - **Force Relay by Default** - Protects user IP addresses
-- **4-Digit Lobby Codes** - Easy "join by code" matchmaking
+- **Custom Lobby Codes** - Any string for "join by code" matchmaking
 - **PhysicsNetworkTransform** - Spring-based physics sync
 
 ### Voice & Chat

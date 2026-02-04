@@ -5,6 +5,7 @@
 
 * **Core Features**
   * [Lobbies](lobbies.md)
+  * [Offline Mode](offline.md)
   * [Voice Chat](voice.md)
   * [Text Chat](chat.md)
   * [Host Migration](migration.md)

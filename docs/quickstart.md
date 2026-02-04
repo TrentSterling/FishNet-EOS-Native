@@ -97,6 +97,26 @@ foreach (var lobby in lobbies)
 }
 ```
 
+## Offline Mode (Singleplayer)
+
+Run without EOS for singleplayer or testing:
+
+```csharp
+// No EOS login needed - works immediately
+transport.StartOffline();
+
+// All FishNet features work normally
+// NetworkObjects, RPCs, SyncVars - all local
+
+// Check mode
+if (transport.IsOfflineMode) { }
+
+// Auto-fallback when EOS unavailable
+transport.OfflineFallback = true;
+```
+
+See [Offline Mode](offline.md) for details.
+
 ## Testing with ParrelSync
 
 1. Open ParrelSync window: `Tools > ParrelSync`
@@ -109,4 +129,5 @@ foreach (var lobby in lobbies)
 
 - [Setup Wizard](setup.md) - Configure EOS credentials
 - [Lobbies](lobbies.md) - Deep dive into lobby features
+- [Offline Mode](offline.md) - Singleplayer without EOS
 - [Voice Chat](voice.md) - Enable voice communication

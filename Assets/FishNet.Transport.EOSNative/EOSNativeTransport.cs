@@ -95,6 +95,11 @@ namespace FishNet.Transport.EOSNative
         [Tooltip("When enabled, checks EOS Sanctions before accepting connections. Banned players will be rejected.")]
         private bool _checkSanctionsBeforeAccept = false;
 
+        [Header("Offline Mode")]
+        [SerializeField]
+        [Tooltip("When enabled, automatically falls back to offline mode if EOS initialization or login fails.")]
+        private bool _offlineFallback = false;
+
         #endregion
 
         #region Lobby State
@@ -205,6 +210,16 @@ namespace FishNet.Transport.EOSNative
         public bool IsOfflineMode => _isOfflineMode;
 
         /// <summary>
+        /// When enabled, automatically falls back to offline mode if EOS initialization or login fails.
+        /// This allows the game to run in singleplayer mode even when EOS is unavailable.
+        /// </summary>
+        public bool OfflineFallback
+        {
+            get => _offlineFallback;
+            set => _offlineFallback = value;
+        }
+
+        /// <summary>
         /// Starts the transport in offline mode for singleplayer.
         /// No EOS login required. Server and client run locally.
         /// </summary>
@@ -256,6 +271,58 @@ namespace FishNet.Transport.EOSNative
             _isOfflineMode = false;
 
             EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", "Offline mode stopped.");
+        }
+
+        /// <summary>
+        /// Starts just the offline server (used by StartConnection fallback).
+        /// </summary>
+        private bool StartOfflineServer()
+        {
+            if (_serverState != LocalConnectionState.Stopped)
+            {
+                NetworkManager.LogWarning("[EOSNativeTransport] Server is already running or starting.");
+                return false;
+            }
+
+            // Initialize offline sockets if not already done
+            if (_offlineServer == null)
+            {
+                _offlineServer = new EOSOfflineServer();
+                _offlineClient = new EOSOfflineClient();
+                _offlineServer.Initialize(this, _offlineClient);
+                _offlineClient.Initialize(this, _offlineServer);
+            }
+
+            _offlineServer.StartConnection();
+            SetServerState(LocalConnectionState.Started);
+
+            EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", "Offline server started.");
+            return true;
+        }
+
+        /// <summary>
+        /// Starts just the offline client (used by StartConnection fallback).
+        /// </summary>
+        private bool StartOfflineClient()
+        {
+            if (_clientState != LocalConnectionState.Stopped)
+            {
+                NetworkManager.LogWarning("[EOSNativeTransport] Client is already running or starting.");
+                return false;
+            }
+
+            // For offline mode with just client, need server running (ClientHost pattern)
+            if (_serverState != LocalConnectionState.Started)
+            {
+                NetworkManager.LogWarning("[EOSNativeTransport] Offline client requires server to be running first (ClientHost mode).");
+                return false;
+            }
+
+            _offlineClient.StartConnection();
+            SetClientState(LocalConnectionState.Started);
+
+            EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", "Offline client connected.");
+            return true;
         }
 
         #endregion
@@ -344,6 +411,11 @@ namespace FishNet.Transport.EOSNative
             if (EOSManager.Instance == null)
             {
                 EOSDebugLogger.LogError("EOSNativeTransport", "EOSManager not found in scene. Auto-initialization failed.");
+                if (_offlineFallback)
+                {
+                    EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", "Falling back to offline mode (no EOSManager).");
+                    StartOffline();
+                }
                 return;
             }
 
@@ -354,6 +426,11 @@ namespace FishNet.Transport.EOSNative
                 if (result != Result.Success && result != Result.AlreadyConfigured)
                 {
                     Debug.LogError($"[EOSNativeTransport] EOS initialization failed: {result}");
+                    if (_offlineFallback)
+                    {
+                        EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", $"Falling back to offline mode (init failed: {result}).");
+                        StartOffline();
+                    }
                     return;
                 }
             }
@@ -371,6 +448,11 @@ namespace FishNet.Transport.EOSNative
                 if (loginResult != Result.Success)
                 {
                     Debug.LogError($"[EOSNativeTransport] Login failed: {loginResult}");
+                    if (_offlineFallback)
+                    {
+                        EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", $"Falling back to offline mode (login failed: {loginResult}).");
+                        StartOffline();
+                    }
                     return;
                 }
             }
@@ -1169,16 +1251,51 @@ namespace FishNet.Transport.EOSNative
 
         public override bool StartConnection(bool server)
         {
-            if (!EOSManager.Instance.IsInitialized)
+            // If already in offline mode, route to offline
+            if (_isOfflineMode)
             {
-                NetworkManager.LogError("[EOSNativeTransport] EOS is not initialized. Call EOSManager.Instance.Initialize() first.");
-                return false;
+                if (server)
+                {
+                    return StartOfflineServer();
+                }
+                else
+                {
+                    return StartOfflineClient();
+                }
             }
 
-            if (!EOSManager.Instance.IsLoggedIn)
+            // Check EOS availability
+            bool eosAvailable = EOSManager.Instance != null &&
+                                EOSManager.Instance.IsInitialized &&
+                                EOSManager.Instance.IsLoggedIn;
+
+            if (!eosAvailable)
             {
-                NetworkManager.LogError("[EOSNativeTransport] Not logged in to EOS. Call EOSManager.Instance.LoginWithDeviceTokenAsync() first.");
-                return false;
+                if (_offlineFallback)
+                {
+                    EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", "EOS not available, falling back to offline mode.");
+                    StartOffline();
+                    if (server)
+                    {
+                        return StartOfflineServer();
+                    }
+                    else
+                    {
+                        return StartOfflineClient();
+                    }
+                }
+                else
+                {
+                    if (EOSManager.Instance == null || !EOSManager.Instance.IsInitialized)
+                    {
+                        NetworkManager.LogError("[EOSNativeTransport] EOS is not initialized. Call EOSManager.Instance.Initialize() first, or enable OfflineFallback.");
+                    }
+                    else
+                    {
+                        NetworkManager.LogError("[EOSNativeTransport] Not logged in to EOS. Call EOSManager.Instance.LoginWithDeviceTokenAsync() first, or enable OfflineFallback.");
+                    }
+                    return false;
+                }
             }
 
             if (server)
@@ -1296,12 +1413,29 @@ namespace FishNet.Transport.EOSNative
 
             SetServerState(LocalConnectionState.Stopping);
 
-            UnsubscribeFromLobbyEvents();
-            _server?.Stop();
-            _server = null;
+            if (_isOfflineMode)
+            {
+                _offlineServer?.StopConnection();
+                _offlineServer = null;
+                // Also stop client if running (they're paired in offline mode)
+                if (_offlineClient != null)
+                {
+                    _offlineClient.StopConnection();
+                    _offlineClient = null;
+                    SetClientState(LocalConnectionState.Stopped);
+                }
+                _isOfflineMode = false;
+                EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", "Offline server stopped.");
+            }
+            else
+            {
+                UnsubscribeFromLobbyEvents();
+                _server?.Stop();
+                _server = null;
+                NetworkManager.Log("[EOSNativeTransport] Server stopped.");
+            }
 
             SetServerState(LocalConnectionState.Stopped);
-            NetworkManager.Log("[EOSNativeTransport] Server stopped.");
 
             return true;
         }
@@ -1315,7 +1449,13 @@ namespace FishNet.Transport.EOSNative
 
             SetClientState(LocalConnectionState.Stopping);
 
-            if (_clientHost != null)
+            if (_isOfflineMode)
+            {
+                _offlineClient?.StopConnection();
+                _offlineClient = null;
+                EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", "Offline client stopped.");
+            }
+            else if (_clientHost != null)
             {
                 _clientHost.Stop();
                 _clientHost = null;
@@ -1327,7 +1467,10 @@ namespace FishNet.Transport.EOSNative
             }
 
             SetClientState(LocalConnectionState.Stopped);
-            NetworkManager.Log("[EOSNativeTransport] Client stopped.");
+            if (!_isOfflineMode)
+            {
+                NetworkManager.Log("[EOSNativeTransport] Client stopped.");
+            }
 
             return true;
         }
