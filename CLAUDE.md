@@ -77,7 +77,7 @@ Assets/FishNet.Transport.EOSNative/
 ├── Lobbies/ (3 files) - EOSLobbyManager, EOSLobbyChatManager, LobbyData
 ├── Voice/ (5 files) - EOSVoiceManager, EOSVoicePlayer, FishNetVoicePlayer, EOSVoiceZoneManager, EOSVoiceTriggerZone
 ├── Migration/ (5 files) - HostMigratable, HostMigrationManager, HostMigrationPlayerSpawner, HostMigrationTester, DoNotMigrate
-├── Social/ (10 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData
+├── Social/ (11 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager
 ├── Storage/ (2 files) - EOSPlayerDataStorage, EOSTitleStorage
 ├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
 ├── Replay/ (9 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings
@@ -445,6 +445,55 @@ party.OnLeaderJoinedGame += (gameCode) => { };
 party.OnFollowRequested += (request) => { };  // For Confirm mode
 party.OnReadyCheckStarted += (data) => { };
 party.OnReadyCheckCompleted += (allReady) => { };
+```
+
+### LFG (Looking for Group)
+
+Create and browse LFG posts to find players or groups.
+
+```csharp
+var lfg = EOSLFGManager.Instance;
+
+// Create a post
+var (result, post) = await lfg.CreatePostAsync("Looking for ranked players");
+
+// Create with options
+var (result, post) = await lfg.CreatePostAsync(new LFGPostOptions()
+    .WithTitle("Need 2 for competitive")
+    .WithGameMode("ranked")
+    .WithDesiredSize(4)
+    .RequiresVoice(true)
+);
+
+// Search for posts
+var (result, posts) = await lfg.SearchPostsAsync(new LFGSearchOptions()
+    .WithGameMode("ranked")
+    .WithRegion("us-east")
+);
+
+// Send join request
+await lfg.SendJoinRequestAsync(post.PostId);
+
+// Accept/reject requests (post owner)
+await lfg.AcceptJoinRequestAsync(request);
+await lfg.RejectJoinRequestAsync(request);
+
+// Manage your post
+await lfg.UpdatePostStatusAsync(LFGStatus.Full);
+await lfg.ClosePostAsync();
+
+// Properties
+if (lfg.HasActivePost) { var post = lfg.ActivePost; }
+var requests = lfg.PendingRequests;
+var results = lfg.SearchResults;
+```
+
+**Events:**
+```csharp
+lfg.OnPostCreated += (post) => { };
+lfg.OnJoinRequestReceived += (request) => { };
+lfg.OnJoinRequestAccepted += (post) => { };
+lfg.OnSearchResultsReceived += (posts) => { };
 ```
 
 ### Chat History
@@ -906,6 +955,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Vote Kick** - Player voting to remove disruptive players, configurable thresholds, host veto, cooldowns
 - **Map/Mode Voting** - End-of-match voting for next map/mode, tie breakers, timer, live results
 - **Voice Chat Zones** - Proximity, team, and custom zone-based voice chat with trigger zones
+- **LFG System** - Create/browse LFG posts, send/manage join requests, auto-expiring posts
 
 ### Next Up
 

@@ -153,6 +153,15 @@ namespace FishNet.Transport.EOSNative
         private string _rankedGameMode = "ranked";
         private string _rankedStatus = "";
 
+        // LFG (Looking for Group)
+        private bool _showLFG = false;
+        private Social.EOSLFGManager _lfgManager;
+        private string _lfgTitle = "Looking for players";
+        private string _lfgGameMode = "";
+        private int _lfgDesiredSize = 4;
+        private string _lfgStatus = "";
+        private Vector2 _lfgSearchScrollPosition;
+
         // Reporting
         private EOSReports _reportsManager;
         private string _reportTargetPuid = "";
@@ -815,6 +824,8 @@ namespace FishNet.Transport.EOSNative
             DrawStatsLeaderboardsSection();
             GUILayout.Space(4);
             DrawRankedSection();
+            GUILayout.Space(4);
+            DrawLFGSection();
             GUILayout.Space(4);
             DrawAchievementsSection();
             GUILayout.Space(4);
@@ -2715,6 +2726,266 @@ namespace FishNet.Transport.EOSNative
             {
                 _rankedStatus = $"Failed ({result})";
             }
+        }
+
+        private void DrawLFGSection()
+        {
+            if (_lfgManager == null) _lfgManager = Social.EOSLFGManager.Instance;
+
+            string title = "LFG (LOOKING FOR GROUP)";
+            if (_lfgManager != null && _lfgManager.HasActivePost)
+            {
+                title = $"LFG (Active: {_lfgManager.ActivePost.CurrentSize}/{_lfgManager.ActivePost.DesiredSize})";
+            }
+
+            _showLFG = DrawFoldout(_showLFG, title);
+            if (!_showLFG) return;
+
+            GUILayout.BeginVertical(_boxStyle);
+
+            if (_lfgManager == null)
+            {
+                GUILayout.Label("LFG Manager not available", _labelStyle);
+                if (GUILayout.Button("Add LFG Manager", _smallButtonStyle))
+                {
+                    var go = EOSManager.Instance?.gameObject;
+                    if (go != null)
+                        go.AddComponent<Social.EOSLFGManager>();
+                }
+                GUILayout.EndVertical();
+                return;
+            }
+
+            // Show active post or create new
+            if (_lfgManager.HasActivePost)
+            {
+                DrawActiveLFGPost();
+            }
+            else
+            {
+                DrawCreateLFGPost();
+            }
+
+            GUILayout.Space(6);
+
+            // Search section
+            DrawLFGSearch();
+
+            // Status
+            if (!string.IsNullOrEmpty(_lfgStatus))
+            {
+                GUILayout.Label(_lfgStatus, _miniLabelStyle);
+            }
+
+            GUILayout.EndVertical();
+        }
+
+        private void DrawActiveLFGPost()
+        {
+            var post = _lfgManager.ActivePost;
+
+            GUILayout.Label("YOUR ACTIVE POST", _miniLabelStyle);
+            GUILayout.Space(2);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Title:", _labelStyle, GUILayout.Width(45));
+            GUILayout.Label(post.Title, _greenStyle);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Size:", _labelStyle, GUILayout.Width(45));
+            GUILayout.Label($"{post.CurrentSize}/{post.DesiredSize}", _cyanStyle);
+            GUILayout.Label($"  Status: {post.Status}", _miniLabelStyle);
+            GUILayout.EndHorizontal();
+
+            if (!string.IsNullOrEmpty(post.GameMode))
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Mode:", _labelStyle, GUILayout.Width(45));
+                GUILayout.Label(post.GameMode, _valueStyle);
+                GUILayout.EndHorizontal();
+            }
+
+            // Time remaining
+            var timeLeft = post.TimeRemaining;
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Expires:", _labelStyle, GUILayout.Width(45));
+            GUILayout.Label($"{timeLeft.Minutes}m {timeLeft.Seconds}s", timeLeft.TotalMinutes < 5 ? _orangeStyle : _valueStyle);
+            GUILayout.EndHorizontal();
+
+            // Pending requests
+            if (_lfgManager.PendingRequests.Count > 0)
+            {
+                GUILayout.Space(4);
+                GUILayout.Label($"Pending Requests: {_lfgManager.PendingRequests.Count}", _yellowStyle);
+                foreach (var request in _lfgManager.PendingRequests)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(request.RequesterName, _labelStyle, GUILayout.Width(100));
+                    GUI.backgroundColor = new Color(0.3f, 0.7f, 0.3f);
+                    if (GUILayout.Button("Accept", _smallButtonStyle, GUILayout.Width(55)))
+                    {
+                        _ = _lfgManager.AcceptJoinRequestAsync(request);
+                    }
+                    GUI.backgroundColor = new Color(0.7f, 0.3f, 0.3f);
+                    if (GUILayout.Button("Reject", _smallButtonStyle, GUILayout.Width(55)))
+                    {
+                        _ = _lfgManager.RejectJoinRequestAsync(request);
+                    }
+                    GUI.backgroundColor = Color.white;
+                    GUILayout.EndHorizontal();
+                }
+            }
+
+            GUILayout.Space(4);
+
+            // Close button
+            GUI.backgroundColor = new Color(0.8f, 0.3f, 0.3f);
+            if (GUILayout.Button("Close Post", _buttonStyle))
+            {
+                _ = CloseLFGPostAsync();
+            }
+            GUI.backgroundColor = Color.white;
+        }
+
+        private void DrawCreateLFGPost()
+        {
+            GUILayout.Label("CREATE POST", _miniLabelStyle);
+            GUILayout.Space(2);
+
+            // Title
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Title:", _labelStyle, GUILayout.Width(45));
+            _lfgTitle = GUILayout.TextField(_lfgTitle, GUILayout.Width(200));
+            GUILayout.EndHorizontal();
+
+            // Game mode
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Mode:", _labelStyle, GUILayout.Width(45));
+            _lfgGameMode = GUILayout.TextField(_lfgGameMode, GUILayout.Width(100));
+            GUILayout.EndHorizontal();
+
+            // Size
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Size:", _labelStyle, GUILayout.Width(45));
+            if (GUILayout.Button("-", _smallButtonStyle, GUILayout.Width(25)))
+                _lfgDesiredSize = Mathf.Max(2, _lfgDesiredSize - 1);
+            GUILayout.Label(_lfgDesiredSize.ToString(), _cyanStyle, GUILayout.Width(25));
+            if (GUILayout.Button("+", _smallButtonStyle, GUILayout.Width(25)))
+                _lfgDesiredSize = Mathf.Min(64, _lfgDesiredSize + 1);
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(4);
+
+            // Create button
+            GUI.backgroundColor = new Color(0.3f, 0.7f, 0.3f);
+            if (GUILayout.Button("Create LFG Post", _buttonStyle))
+            {
+                _ = CreateLFGPostAsync();
+            }
+            GUI.backgroundColor = Color.white;
+        }
+
+        private void DrawLFGSearch()
+        {
+            GUILayout.Space(4);
+            GUILayout.Label("BROWSE POSTS", _miniLabelStyle);
+
+            GUILayout.BeginHorizontal();
+            GUI.backgroundColor = new Color(0.3f, 0.5f, 0.8f);
+            if (GUILayout.Button("Search", _smallButtonStyle, GUILayout.Width(60)))
+            {
+                _ = SearchLFGPostsAsync();
+            }
+            if (GUILayout.Button("Refresh", _smallButtonStyle, GUILayout.Width(60)))
+            {
+                _ = _lfgManager.RefreshSearchAsync();
+            }
+            GUI.backgroundColor = Color.white;
+            GUILayout.Label($"{_lfgManager.SearchResults.Count} posts", _miniLabelStyle);
+            GUILayout.EndHorizontal();
+
+            // Results list
+            if (_lfgManager.SearchResults.Count > 0)
+            {
+                _lfgSearchScrollPosition = GUILayout.BeginScrollView(_lfgSearchScrollPosition, GUILayout.Height(120));
+
+                foreach (var post in _lfgManager.SearchResults)
+                {
+                    if (post.IsExpired) continue;
+
+                    GUILayout.BeginVertical(_boxStyle);
+
+                    // Title and owner
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label(post.Title, _labelStyle, GUILayout.Width(150));
+                    GUILayout.Label($"by {post.OwnerName}", _miniLabelStyle);
+                    GUILayout.EndHorizontal();
+
+                    // Info row
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label($"{post.CurrentSize}/{post.DesiredSize}", _cyanStyle, GUILayout.Width(40));
+                    if (!string.IsNullOrEmpty(post.GameMode))
+                        GUILayout.Label(post.GameMode, _miniLabelStyle, GUILayout.Width(60));
+                    if (post.VoiceRequired)
+                        GUILayout.Label("[Voice]", _yellowStyle, GUILayout.Width(50));
+                    GUILayout.FlexibleSpace();
+
+                    // Join button
+                    bool alreadySent = _lfgManager.SentRequests.Contains(post.PostId);
+                    GUI.enabled = post.IsJoinable && !alreadySent;
+                    GUI.backgroundColor = alreadySent ? Color.gray : new Color(0.3f, 0.7f, 0.3f);
+                    if (GUILayout.Button(alreadySent ? "Sent" : "Join", _smallButtonStyle, GUILayout.Width(50)))
+                    {
+                        _ = _lfgManager.SendJoinRequestAsync(post.PostId);
+                    }
+                    GUI.backgroundColor = Color.white;
+                    GUI.enabled = true;
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.EndVertical();
+                }
+
+                GUILayout.EndScrollView();
+            }
+        }
+
+        private async void CreateLFGPostAsync()
+        {
+            _lfgStatus = "Creating post...";
+            var options = new Social.LFGPostOptions()
+                .WithTitle(_lfgTitle)
+                .WithGameMode(_lfgGameMode)
+                .WithDesiredSize(_lfgDesiredSize);
+
+            var (result, post) = await _lfgManager.CreatePostAsync(options);
+            if (result == Result.Success)
+            {
+                _lfgStatus = "Post created!";
+            }
+            else
+            {
+                _lfgStatus = $"Failed: {result}";
+            }
+        }
+
+        private async void CloseLFGPostAsync()
+        {
+            _lfgStatus = "Closing post...";
+            var result = await _lfgManager.ClosePostAsync();
+            _lfgStatus = result == Result.Success ? "Post closed" : $"Failed: {result}";
+        }
+
+        private async void SearchLFGPostsAsync()
+        {
+            _lfgStatus = "Searching...";
+            var options = new Social.LFGSearchOptions();
+            if (!string.IsNullOrEmpty(_lfgGameMode))
+                options.WithGameMode(_lfgGameMode);
+
+            var (result, posts) = await _lfgManager.SearchPostsAsync(options);
+            _lfgStatus = result == Result.Success ? $"Found {posts.Count} posts" : $"Search failed: {result}";
         }
 
         private void DrawAchievementsSection()
