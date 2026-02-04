@@ -101,9 +101,10 @@ Assets/FishNet.Transport.EOSNative/
 ```csharp
 var transport = GetComponent<EOSNativeTransport>();
 
-// Simple host (auto-generates 4-digit code)
+// Simple host (generates random code, or pass any string)
 var (result, lobby) = await transport.HostLobbyAsync();
-var (result, lobby) = await transport.HostLobbyAsync("1234");  // Custom code
+var (result, lobby) = await transport.HostLobbyAsync("1234");
+var (result, lobby) = await transport.HostLobbyAsync("MyRoom");  // Any string works
 
 // Host with options (recommended)
 var (result, lobby) = await transport.HostLobbyAsync(new LobbyOptions
