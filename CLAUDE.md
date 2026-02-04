@@ -78,7 +78,7 @@ Assets/FishNet.Transport.EOSNative/
 ├── Lobbies/ (3 files) - EOSLobbyManager, EOSLobbyChatManager, LobbyData
 ├── Voice/ (5 files) - EOSVoiceManager, EOSVoicePlayer, FishNetVoicePlayer, EOSVoiceZoneManager, EOSVoiceTriggerZone
 ├── Migration/ (5 files) - HostMigratable, HostMigrationManager, HostMigrationPlayerSpawner, HostMigrationTester, DoNotMigrate
-├── Social/ (16 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager, EOSTournamentManager, EOSSeasonManager, EOSClanManager, EOSGlobalChatManager, EOSReputationManager
+├── Social/ (17 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager, EOSTournamentManager, EOSSeasonManager, EOSClanManager, EOSGlobalChatManager, EOSReputationManager, EOSPingManager
 ├── Storage/ (2 files) - EOSPlayerDataStorage, EOSTitleStorage
 ├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
 ├── Replay/ (12 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings, EOSReplayVoiceRecorder, EOSReplayVoicePlayer, EOSReplayHighlights
@@ -1085,6 +1085,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Global Chat Channels** - Cross-lobby chat channels with history, muting, system messages
 - **Reputation & Karma** - Commendation/report system with categories, levels, daily limits
 - **Replay Highlights** - Auto-detect significant moments (multi-kills, clutches, comebacks), manual bookmarks
+- **Ping & Callout System** - World position/object pings, multiple types, team visibility, visual indicators
 
 ### Next Up
 
