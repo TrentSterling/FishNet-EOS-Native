@@ -1,10 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Epic.OnlineServices;
 using Epic.OnlineServices.Achievements;
 using FishNet.Transport.EOSNative.Logging;
 using UnityEngine;
+using UnityEngine.Networking;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -12,7 +14,19 @@ using UnityEditor;
 namespace FishNet.Transport.EOSNative
 {
     /// <summary>
-    /// EOS Achievements manager.
+    /// Stat-based achievement trigger configuration
+    /// </summary>
+    [Serializable]
+    public class AchievementStatTrigger
+    {
+        public string AchievementId;
+        public string StatName;
+        public int TargetValue;
+        public bool IsProgressive;      // Update progress as stat increases
+    }
+
+    /// <summary>
+    /// EOS Achievements manager with progress tracking, stat triggers, and popups.
     /// Requires achievements to be defined in the EOS Developer Portal.
     /// Works with DeviceID auth (Connect Interface).
     /// </summary>
@@ -47,6 +61,22 @@ namespace FishNet.Transport.EOSNative
         public event Action OnAchievementsLoaded;
         /// <summary>Fired when an achievement is unlocked.</summary>
         public event Action<string> OnAchievementUnlocked;
+        /// <summary>Fired when achievement progress changes (id, oldProgress, newProgress).</summary>
+        public event Action<string, float, float> OnProgressChanged;
+
+        #endregion
+
+        #region Settings
+
+        [Header("Popup Settings")]
+        [SerializeField] private bool _showPopups = true;
+        [SerializeField] private float _popupDuration = 5f;
+
+        [Header("Offline Caching")]
+        [SerializeField] private bool _enableOfflineCache = true;
+
+        [Header("Stat Triggers")]
+        [SerializeField] private List<AchievementStatTrigger> _statTriggers = new();
 
         #endregion
 
@@ -57,6 +87,9 @@ namespace FishNet.Transport.EOSNative
         private List<AchievementDefinition> _definitions = new();
         private List<PlayerAchievementData> _playerAchievements = new();
         private ulong _achievementUnlockedHandle;
+        private readonly Dictionary<string, Texture2D> _iconCache = new();
+        private readonly Dictionary<string, int> _localStats = new();
+        private const string CACHE_PREFIX = "EOS_ACH_";
 
         #endregion
 
@@ -76,6 +109,10 @@ namespace FishNet.Transport.EOSNative
         public IReadOnlyList<PlayerAchievementData> PlayerAchievements => _playerAchievements;
         public int TotalAchievements => _definitions.Count;
         public int UnlockedCount => _playerAchievements.FindAll(a => a.IsUnlocked).Count;
+        public bool ShowPopups { get => _showPopups; set => _showPopups = value; }
+        public float PopupDuration { get => _popupDuration; set => _popupDuration = value; }
+        public bool EnableOfflineCache { get => _enableOfflineCache; set => _enableOfflineCache = value; }
+        public IReadOnlyList<AchievementStatTrigger> StatTriggers => _statTriggers;
 
         #endregion
 
@@ -149,6 +186,9 @@ namespace FishNet.Transport.EOSNative
             var playerResult = await QueryPlayerAchievementsAsync();
             if (playerResult != Result.Success)
                 return playerResult;
+
+            // Load offline cache
+            LoadOfflineCache();
 
             EOSDebugLogger.Log(DebugCategory.Achievements, "EOSAchievements", $" Loaded {_definitions.Count} achievements, {UnlockedCount} unlocked");
             OnAchievementsLoaded?.Invoke();
@@ -343,6 +383,259 @@ namespace FishNet.Transport.EOSNative
             return (float)(achievement?.Progress ?? 0.0);
         }
 
+        /// <summary>
+        /// Set progress for an achievement (0.0 to 1.0). Auto-unlocks at 1.0.
+        /// </summary>
+        public async Task<Result> SetProgressAsync(string achievementId, float progress)
+        {
+            progress = Mathf.Clamp01(progress);
+            float oldProgress = GetProgress(achievementId);
+
+            if (progress >= 1f)
+            {
+                return await UnlockAchievementAsync(achievementId);
+            }
+
+            // Update local cache
+            var index = _playerAchievements.FindIndex(a => a.Id == achievementId);
+            if (index >= 0)
+            {
+                var updated = _playerAchievements[index];
+                updated.Progress = progress;
+                _playerAchievements[index] = updated;
+            }
+
+            // Cache offline
+            if (_enableOfflineCache)
+            {
+                PlayerPrefs.SetFloat(CACHE_PREFIX + achievementId, progress);
+                PlayerPrefs.Save();
+            }
+
+            OnProgressChanged?.Invoke(achievementId, oldProgress, progress);
+            return Result.Success;
+        }
+
+        /// <summary>
+        /// Increment progress for an achievement.
+        /// </summary>
+        public async Task<Result> IncrementProgressAsync(string achievementId, float amount)
+        {
+            float current = GetProgress(achievementId);
+            return await SetProgressAsync(achievementId, current + amount);
+        }
+
+        /// <summary>
+        /// Increment progress based on current/target values (e.g., 50 kills out of 100).
+        /// </summary>
+        public async Task<Result> SetProgressCountAsync(string achievementId, int current, int target)
+        {
+            if (target <= 0) return Result.InvalidParameters;
+            float progress = (float)current / target;
+            return await SetProgressAsync(achievementId, progress);
+        }
+
+        #endregion
+
+        #region Stat Triggers
+
+        /// <summary>
+        /// Register a stat trigger for auto-unlock/progress.
+        /// </summary>
+        public void RegisterStatTrigger(string achievementId, string statName, int targetValue, bool isProgressive = true)
+        {
+            var existing = _statTriggers.FindIndex(t => t.AchievementId == achievementId);
+            var trigger = new AchievementStatTrigger
+            {
+                AchievementId = achievementId,
+                StatName = statName,
+                TargetValue = targetValue,
+                IsProgressive = isProgressive
+            };
+
+            if (existing >= 0)
+                _statTriggers[existing] = trigger;
+            else
+                _statTriggers.Add(trigger);
+        }
+
+        /// <summary>
+        /// Report a stat value change. Checks triggers and updates achievements.
+        /// </summary>
+        public async void ReportStat(string statName, int value)
+        {
+            _localStats[statName] = value;
+
+            foreach (var trigger in _statTriggers)
+            {
+                if (trigger.StatName != statName) continue;
+                if (IsUnlocked(trigger.AchievementId)) continue;
+
+                if (value >= trigger.TargetValue)
+                {
+                    await UnlockAchievementAsync(trigger.AchievementId);
+                }
+                else if (trigger.IsProgressive)
+                {
+                    await SetProgressCountAsync(trigger.AchievementId, value, trigger.TargetValue);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Increment a stat value. Checks triggers and updates achievements.
+        /// </summary>
+        public void IncrementStat(string statName, int amount = 1)
+        {
+            int current = _localStats.TryGetValue(statName, out var val) ? val : 0;
+            ReportStat(statName, current + amount);
+        }
+
+        /// <summary>
+        /// Get current stat value.
+        /// </summary>
+        public int GetStat(string statName)
+        {
+            return _localStats.TryGetValue(statName, out var val) ? val : 0;
+        }
+
+        #endregion
+
+        #region Icon Loading
+
+        /// <summary>
+        /// Load achievement icon texture (cached).
+        /// </summary>
+        public void LoadIcon(string achievementId, bool unlocked, Action<Texture2D> callback)
+        {
+            var def = GetDefinition(achievementId);
+            if (!def.HasValue)
+            {
+                callback?.Invoke(null);
+                return;
+            }
+
+            string url = unlocked ? def.Value.UnlockedIconUrl : def.Value.LockedIconUrl;
+            if (string.IsNullOrEmpty(url))
+            {
+                callback?.Invoke(null);
+                return;
+            }
+
+            string cacheKey = $"{achievementId}_{(unlocked ? "u" : "l")}";
+            if (_iconCache.TryGetValue(cacheKey, out var cached))
+            {
+                callback?.Invoke(cached);
+                return;
+            }
+
+            StartCoroutine(LoadIconCoroutine(url, cacheKey, callback));
+        }
+
+        private IEnumerator LoadIconCoroutine(string url, string cacheKey, Action<Texture2D> callback)
+        {
+            using var request = UnityWebRequestTexture.GetTexture(url);
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                var texture = DownloadHandlerTexture.GetContent(request);
+                _iconCache[cacheKey] = texture;
+                callback?.Invoke(texture);
+            }
+            else
+            {
+                callback?.Invoke(null);
+            }
+        }
+
+        /// <summary>
+        /// Get cached icon if available.
+        /// </summary>
+        public Texture2D GetCachedIcon(string achievementId, bool unlocked)
+        {
+            string cacheKey = $"{achievementId}_{(unlocked ? "u" : "l")}";
+            return _iconCache.TryGetValue(cacheKey, out var tex) ? tex : null;
+        }
+
+        #endregion
+
+        #region Offline Cache
+
+        private void LoadOfflineCache()
+        {
+            if (!_enableOfflineCache) return;
+
+            foreach (var def in _definitions)
+            {
+                string key = CACHE_PREFIX + def.Id;
+                if (PlayerPrefs.HasKey(key))
+                {
+                    float progress = PlayerPrefs.GetFloat(key);
+                    var index = _playerAchievements.FindIndex(a => a.Id == def.Id);
+                    if (index >= 0)
+                    {
+                        var current = _playerAchievements[index];
+                        // Only use cache if server progress is lower
+                        if (current.Progress < progress && !current.IsUnlocked)
+                        {
+                            current.Progress = progress;
+                            _playerAchievements[index] = current;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void SaveOfflineCache()
+        {
+            if (!_enableOfflineCache) return;
+
+            foreach (var achievement in _playerAchievements)
+            {
+                PlayerPrefs.SetFloat(CACHE_PREFIX + achievement.Id, (float)achievement.Progress);
+            }
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>
+        /// Clear offline cache.
+        /// </summary>
+        public void ClearOfflineCache()
+        {
+            foreach (var def in _definitions)
+            {
+                PlayerPrefs.DeleteKey(CACHE_PREFIX + def.Id);
+            }
+            PlayerPrefs.Save();
+        }
+
+        #endregion
+
+        #region Popup Integration
+
+        private void ShowUnlockPopup(string achievementId)
+        {
+            if (!_showPopups) return;
+
+            var def = GetDefinition(achievementId);
+            if (!def.HasValue) return;
+
+            // Use toast system if available
+            if (EOSToastManager.Instance != null)
+            {
+                EOSToastManager.Success(
+                    "Achievement Unlocked!",
+                    def.Value.DisplayName,
+                    _popupDuration
+                );
+            }
+
+            // Also fire event for custom UI
+            EOSDebugLogger.Log(DebugCategory.Achievements, "EOSAchievements",
+                $"[POPUP] Achievement Unlocked: {def.Value.DisplayName}");
+        }
+
         #endregion
 
         #region Notifications
@@ -374,7 +667,6 @@ namespace FishNet.Transport.EOSNative
             var unlockTime = info.UnlockTime;
 
             EOSDebugLogger.Log(DebugCategory.Achievements, "EOSAchievements", $" Achievement unlocked: {achievementId}");
-            OnAchievementUnlocked?.Invoke(achievementId);
 
             // Update local cache
             var existing = _playerAchievements.FindIndex(a => a.Id == achievementId);
@@ -386,6 +678,12 @@ namespace FishNet.Transport.EOSNative
                 updated.Progress = 1.0;
                 _playerAchievements[existing] = updated;
             }
+
+            // Show popup
+            ShowUnlockPopup(achievementId);
+
+            // Fire event
+            OnAchievementUnlocked?.Invoke(achievementId);
         }
 
         #endregion

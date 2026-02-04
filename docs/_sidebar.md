@@ -33,6 +33,7 @@
   * [Match History](match-history.md)
   * [Match Rematch](rematch.md)
   * [Leaderboards & Stats](leaderboards.md)
+  * [Achievements](achievements.md)
 
 * **Replay System**
   * [Recording & Playback](replays.md)
