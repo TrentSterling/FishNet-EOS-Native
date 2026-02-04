@@ -352,6 +352,164 @@ namespace FishNet.Transport.EOSNative.Lobbies
 
             return attrs;
         }
+
+        #region Fluent Builder Methods
+
+        /// <summary>
+        /// Set the lobby name.
+        /// </summary>
+        public LobbyCreateOptions WithName(string name)
+        {
+            LobbyName = name;
+            return this;
+        }
+
+        /// <summary>
+        /// Set the game mode (e.g., "deathmatch", "coop", "ranked").
+        /// </summary>
+        public LobbyCreateOptions WithGameMode(string gameMode)
+        {
+            GameMode = gameMode;
+            return this;
+        }
+
+        /// <summary>
+        /// Set the map name.
+        /// </summary>
+        public LobbyCreateOptions WithMap(string map)
+        {
+            Map = map;
+            return this;
+        }
+
+        /// <summary>
+        /// Set the server region (e.g., "us-east", "eu-west").
+        /// </summary>
+        public LobbyCreateOptions WithRegion(string region)
+        {
+            Region = region;
+            return this;
+        }
+
+        /// <summary>
+        /// Set a password for the lobby (makes it password-protected).
+        /// </summary>
+        public LobbyCreateOptions WithPassword(string password)
+        {
+            Password = password;
+            return this;
+        }
+
+        /// <summary>
+        /// Set the maximum number of players.
+        /// </summary>
+        public LobbyCreateOptions WithMaxPlayers(uint maxPlayers)
+        {
+            MaxPlayers = maxPlayers;
+            return this;
+        }
+
+        /// <summary>
+        /// Set the bucket ID for version/platform grouping.
+        /// </summary>
+        public LobbyCreateOptions WithBucketId(string bucketId)
+        {
+            BucketId = bucketId;
+            return this;
+        }
+
+        /// <summary>
+        /// Set a custom join code (any string).
+        /// </summary>
+        public LobbyCreateOptions WithJoinCode(string code)
+        {
+            JoinCode = code;
+            return this;
+        }
+
+        /// <summary>
+        /// Use EOS-generated LobbyId as the join code (guaranteed unique).
+        /// </summary>
+        public LobbyCreateOptions WithEosLobbyId()
+        {
+            UseEosLobbyId = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Enable or disable voice chat (default: enabled).
+        /// </summary>
+        public LobbyCreateOptions WithVoice(bool enabled = true)
+        {
+            EnableVoice = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Start with microphone muted.
+        /// </summary>
+        public LobbyCreateOptions WithMutedMic(bool muted = true)
+        {
+            StartMuted = muted;
+            return this;
+        }
+
+        /// <summary>
+        /// Enable or disable host migration (default: enabled).
+        /// </summary>
+        public LobbyCreateOptions WithHostMigration(bool enabled = true)
+        {
+            AllowHostMigration = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Enable or disable crossplay (default: enabled).
+        /// </summary>
+        public LobbyCreateOptions WithCrossplay(bool enabled = true)
+        {
+            AllowCrossplay = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Set skill level for matchmaking.
+        /// </summary>
+        public LobbyCreateOptions WithSkillLevel(int skill)
+        {
+            SkillLevel = skill;
+            return this;
+        }
+
+        /// <summary>
+        /// Add a custom attribute.
+        /// </summary>
+        public LobbyCreateOptions WithAttribute(string key, string value)
+        {
+            Attributes ??= new Dictionary<string, string>();
+            Attributes[key] = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Make the lobby private (not publicly searchable).
+        /// </summary>
+        public LobbyCreateOptions AsPrivate()
+        {
+            IsPublic = false;
+            return this;
+        }
+
+        /// <summary>
+        /// Make the lobby public (searchable).
+        /// </summary>
+        public LobbyCreateOptions AsPublic()
+        {
+            IsPublic = true;
+            return this;
+        }
+
+        #endregion
     }
 
     /// <summary>
