@@ -1083,10 +1083,15 @@ namespace FishNet.Transport.EOSNative
                 var lobby = lobbyManager.CurrentLobby;
                 string role = lobbyManager.IsOwner ? "HOST" : "CLIENT";
 
-                // Room code display (big and prominent)
+                // Room code display (big and prominent) with copy button
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(lobby.JoinCode ?? "????", new GUIStyle(_headerStyle) { fontSize = 32, normal = { textColor = new Color(0.3f, 1f, 0.5f) } });
+                if (GUILayout.Button("📋", GUILayout.Width(30), GUILayout.Height(30)))
+                {
+                    GUIUtility.systemCopyBuffer = lobby.JoinCode;
+                    EOSToastManager.Success("Copied!", $"Lobby code {lobby.JoinCode} copied to clipboard");
+                }
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
 
