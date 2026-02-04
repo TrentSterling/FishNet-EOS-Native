@@ -42,6 +42,7 @@
 
 * **Advanced**
   * [Anti-Cheat (EAC)](anticheat.md)
+  * [Auto-Reconnect](reconnect.md)
   * [Cloud Storage](storage.md)
   * [Architecture](architecture.md)
 
