@@ -80,7 +80,7 @@ Assets/FishNet.Transport.EOSNative/
 ├── Social/ (11 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager
 ├── Storage/ (2 files) - EOSPlayerDataStorage, EOSTitleStorage
 ├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
-├── Replay/ (9 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings
+├── Replay/ (11 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings, EOSReplayVoiceRecorder, EOSReplayVoicePlayer
 ├── AntiCheat/ (1 file) - EOSAntiCheatManager
 ├── EOSVoteKickManager.cs         # Player vote kick system
 ├── EOSMapVoteManager.cs          # Map/mode voting system
@@ -715,6 +715,24 @@ bool warning = recorder.IsApproachingLimit;    // Within 5 min of limit
 | Max duration | 30 minutes (auto-stops) |
 | File size | ~500KB for 10-min match |
 
+**Voice Recording:**
+```csharp
+var voiceRecorder = EOSReplayVoiceRecorder.Instance;
+var voicePlayer = EOSReplayVoicePlayer.Instance;
+
+// Voice recording is automatic when replay recording starts
+voiceRecorder.Enabled = true;  // Enabled by default
+
+// Voice playback during replay viewing
+voicePlayer.MasterVolume = 0.8f;
+voicePlayer.SetSpeakerVolume(puid, 0.5f);
+voicePlayer.SetSpeakerMuted(puid, true);
+
+// Events
+voicePlayer.OnSpeakerStarted += (puid, name) => { };
+voicePlayer.OnSpeakerStopped += (puid) => { };
+```
+
 **Data Compression:**
 - Position: Half-precision floats (6 bytes vs 12)
 - Rotation: Smallest-three quaternion (4 bytes vs 16)
@@ -965,11 +983,11 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Voice Chat Zones** - Proximity, team, and custom zone-based voice chat with trigger zones
 - **LFG System** - Create/browse LFG posts, send/manage join requests, auto-expiring posts
 - **Platform Filtering** - Filter lobby searches by host platform (same, desktop, mobile, specific)
+- **Voice Recording in Replays** - Capture and playback voice chat during replay recording/viewing
 
 ### Next Up
 
-#### Technical
-- Voice chat recording in replays
+(No major features currently planned - see GitHub issues for community requests)
 
 ## Debug Tools
 
