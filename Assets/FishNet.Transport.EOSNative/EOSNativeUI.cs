@@ -4184,6 +4184,8 @@ namespace FishNet.Transport.EOSNative
             DrawNetworkConnectionsSection();
             GUILayout.Space(4);
             DrawAfkSettingsSection();
+            GUILayout.Space(4);
+            DrawVoteKickSection();
 
             GUILayout.EndScrollView();
         }
@@ -4462,6 +4464,19 @@ namespace FishNet.Transport.EOSNative
                         }
                     }
 
+                    // Vote kick button (for non-hosts, or host to start votes against others)
+                    var voteKickManager = EOSVoteKickManager.Instance;
+                    if (voteKickManager != null && voteKickManager.Enabled && !voteKickManager.IsVoteActive)
+                    {
+                        if (voteKickManager.CanBeVoteKicked(puid) && voteKickManager.GetCooldownRemaining() <= 0)
+                        {
+                            if (GUILayout.Button("VoteKick", _smallButtonStyle, GUILayout.Width(60)))
+                            {
+                                _ = voteKickManager.StartVoteKickAsync(connId, "Disruptive behavior");
+                            }
+                        }
+                    }
+
                     GUILayout.EndHorizontal();
                 }
             }
@@ -4561,6 +4576,114 @@ namespace FishNet.Transport.EOSNative
                 {
                     GUILayout.Space(4);
                     GUILayout.Label($"AFK Players: {afkPlayers.Count}", _orangeStyle);
+                }
+            }
+
+            GUILayout.EndVertical();
+        }
+
+        private void DrawVoteKickSection()
+        {
+            var voteKickManager = EOSVoteKickManager.Instance;
+            if (voteKickManager == null) return;
+
+            GUILayout.Label("VOTE KICK", _sectionHeaderStyle);
+            GUILayout.BeginVertical(_boxStyle);
+
+            // Enable toggle
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Enabled:", _labelStyle, GUILayout.Width(80));
+            bool newEnabled = GUILayout.Toggle(voteKickManager.Enabled, voteKickManager.Enabled ? "ON" : "OFF", _smallButtonStyle, GUILayout.Width(50));
+            if (newEnabled != voteKickManager.Enabled)
+                voteKickManager.Enabled = newEnabled;
+            GUILayout.EndHorizontal();
+
+            if (voteKickManager.Enabled)
+            {
+                // Threshold
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Threshold:", _labelStyle, GUILayout.Width(80));
+                string thresholdText = voteKickManager.Threshold switch
+                {
+                    EOSVoteKickManager.VoteThreshold.Majority => ">50%",
+                    EOSVoteKickManager.VoteThreshold.TwoThirds => "67%",
+                    EOSVoteKickManager.VoteThreshold.ThreeQuarters => "75%",
+                    EOSVoteKickManager.VoteThreshold.Unanimous => "100%",
+                    EOSVoteKickManager.VoteThreshold.Custom => $"{voteKickManager.CustomThresholdPercent}%",
+                    _ => "?"
+                };
+                GUILayout.Label(thresholdText, _valueStyle, GUILayout.Width(40));
+                GUILayout.EndHorizontal();
+
+                // Host immunity
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Host Immune:", _labelStyle, GUILayout.Width(80));
+                GUILayout.Label(voteKickManager.HostImmunity ? "YES" : "NO", voteKickManager.HostImmunity ? _greenStyle : _yellowStyle);
+                GUILayout.EndHorizontal();
+
+                // Active vote display
+                if (voteKickManager.IsVoteActive)
+                {
+                    GUILayout.Space(4);
+                    var vote = voteKickManager.ActiveVote;
+                    GUILayout.Label($"VOTE IN PROGRESS: Kick {vote.TargetName}?", _orangeStyle);
+                    GUILayout.Label($"Reason: {vote.Reason}", _miniLabelStyle);
+
+                    int eligible = voteKickManager.GetEligibleVoterCount();
+                    int required = voteKickManager.GetRequiredYesVotes();
+                    GUILayout.Label($"Votes: {vote.YesVotes} YES / {vote.NoVotes} NO (need {required}/{eligible})", _labelStyle);
+                    GUILayout.Label($"Time remaining: {vote.TimeRemaining:0}s", _labelStyle);
+
+                    // Vote buttons (if we haven't voted and we're not the target)
+                    if (!voteKickManager.HasVoted() && _transport?.LocalProductUserId != vote.TargetPuid)
+                    {
+                        GUILayout.BeginHorizontal();
+                        if (GUILayout.Button("Vote YES (Kick)", _smallButtonStyle))
+                        {
+                            _ = voteKickManager.CastVoteAsync(true);
+                        }
+                        if (GUILayout.Button("Vote NO (Keep)", _smallButtonStyle))
+                        {
+                            _ = voteKickManager.CastVoteAsync(false);
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                    else if (voteKickManager.HasVoted())
+                    {
+                        bool? myVote = voteKickManager.GetVote(_transport?.LocalProductUserId);
+                        GUILayout.Label($"You voted: {(myVote == true ? "YES" : "NO")}", _greenStyle);
+                    }
+
+                    // Host veto button
+                    if (voteKickManager.HostCanVeto && _networkManager != null && _networkManager.IsServerStarted)
+                    {
+                        if (GUILayout.Button("VETO (Host)", _smallButtonStyle))
+                        {
+                            _ = voteKickManager.VetoVoteAsync();
+                        }
+                    }
+
+                    // Initiator cancel button
+                    if (vote.InitiatorPuid == _transport?.LocalProductUserId)
+                    {
+                        if (GUILayout.Button("Cancel Vote", _smallButtonStyle))
+                        {
+                            _ = voteKickManager.CancelVoteAsync();
+                        }
+                    }
+                }
+                else
+                {
+                    // Cooldown display
+                    float cooldown = voteKickManager.GetCooldownRemaining();
+                    if (cooldown > 0)
+                    {
+                        GUILayout.Label($"Cooldown: {cooldown:0}s", _yellowStyle);
+                    }
+                    else
+                    {
+                        GUILayout.Label("No active vote", _labelStyle);
+                    }
                 }
             }
 

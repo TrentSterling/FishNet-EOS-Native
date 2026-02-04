@@ -82,6 +82,7 @@ Assets/FishNet.Transport.EOSNative/
 ├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
 ├── Replay/ (9 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings
 ├── AntiCheat/ (1 file) - EOSAntiCheatManager
+├── EOSVoteKickManager.cs         # Player vote kick system
 ├── EOSSpectatorMode.cs           # Spectator camera system
 ├── Editor/ (4 files) - EOSNativeTransportEditor, EOSNativeMenu, EOSSetupWizard, EOSDebugSettingsWindow
 └── Demo/ (5 files) - PlayerBall, NetworkPhysicsObject, PlayerSpawner, etc.
@@ -667,6 +668,71 @@ antiCheat.OnPeerAuthStatusChanged += (handle, status) => { };
 - Run integrity tool during build to generate catalogs
 - Windows/Mac/Linux only (mobile not supported)
 
+### Vote Kick
+
+Allow players to vote to remove disruptive players.
+
+```csharp
+var voteKick = EOSVoteKickManager.Instance;
+
+// Start a vote kick
+var (success, error) = await voteKick.StartVoteKickAsync(targetPuid, "Reason");
+var (success, error) = await voteKick.StartVoteKickAsync(connectionId, "Reason");
+
+// Cast your vote
+await voteKick.CastVoteAsync(true);   // Vote YES (kick)
+await voteKick.CastVoteAsync(false);  // Vote NO (keep)
+
+// Host actions
+await voteKick.VetoVoteAsync();       // Cancel vote, keep player
+await voteKick.CancelVoteAsync();     // Initiator can cancel their own vote
+
+// Check status
+if (voteKick.IsVoteActive) { }
+bool canKick = voteKick.CanBeVoteKicked(puid);
+bool voted = voteKick.HasVoted();
+int required = voteKick.GetRequiredYesVotes();
+float cooldown = voteKick.GetCooldownRemaining();
+```
+
+**Configuration (Inspector or code):**
+```csharp
+// Threshold options
+voteKick.Threshold = VoteThreshold.Majority;      // >50%
+voteKick.Threshold = VoteThreshold.TwoThirds;     // >=67%
+voteKick.Threshold = VoteThreshold.ThreeQuarters; // >=75%
+voteKick.Threshold = VoteThreshold.Unanimous;     // 100%
+voteKick.Threshold = VoteThreshold.Custom;
+voteKick.CustomThresholdPercent = 60;
+
+// Other settings
+voteKick.VoteTimeout = 30f;           // Seconds before vote expires
+voteKick.VoteCooldown = 60f;          // Cooldown between starting votes
+voteKick.MinPlayersForVote = 3;       // Minimum players required
+voteKick.HostImmunity = true;         // Host cannot be vote kicked
+voteKick.HostCanVeto = true;          // Host can veto any vote
+voteKick.HostVoteWeight = 1;          // Host vote counts as N votes
+voteKick.RequireReason = false;       // Require reason when starting
+```
+
+**Events:**
+```csharp
+voteKick.OnVoteStarted += (voteData) => { };
+voteKick.OnVoteCast += (voterPuid, votedYes) => { };
+voteKick.OnVoteProgress += (yesVotes, noVotes, totalEligible) => { };
+voteKick.OnVoteEnded += (voteData, result) => { };  // Passed, Failed, Vetoed, TimedOut, Cancelled
+voteKick.OnPlayerVoteKicked += (puid, name) => { };
+```
+
+**Vote Results:**
+| Result | Description |
+|--------|-------------|
+| Passed | Enough YES votes, player kicked |
+| Failed | Too many NO votes or abstains |
+| Vetoed | Host used veto power |
+| TimedOut | Vote expired before conclusion |
+| Cancelled | Initiator or target left |
+
 ## Coding Standards
 
 - **Namespace:** `FishNet.Transport.EOSNative`
@@ -734,6 +800,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Ranked Matchmaking** - Skill-based matchmaking with ELO/Glicko-2/SimpleMMR, tier display, cloud-persisted ratings
 - **Replay System** - Record/playback games with timeline controls, favorites, export/import, duration limits, quality warnings
 - **Anti-Cheat (EAC)** - Easy Anti-Cheat integration with session management, peer validation, violation detection
+- **Vote Kick** - Player voting to remove disruptive players, configurable thresholds, host veto, cooldowns
 
 ### Next Up
 
