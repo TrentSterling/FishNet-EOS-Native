@@ -115,8 +115,11 @@ var (result, lobby) = await transport.HostLobbyAsync(new LobbyCreateOptions
     UseEosLobbyId = true  // Code will be EOS-generated ID
 });
 
-// Join
+// Join by code
 var (result, lobby) = await transport.JoinLobbyAsync("1234");
+
+// Join by name
+var (result, lobby) = await transport.JoinLobbyByNameAsync("Pro Players Only");
 
 // Quick Match (any lobby)
 var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
@@ -148,6 +151,9 @@ var options = new LobbySearchOptions()
     .WithMaxResults(20);
 
 var (result, lobbies) = await transport.SearchLobbiesAsync(options);
+
+// Search by name
+var (result, lobbies) = await transport.SearchLobbiesByNameAsync("Pro", exactMatch: false);
 ```
 
 ### Testing with ParrelSync

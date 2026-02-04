@@ -224,7 +224,7 @@ Current development tasks for FishNet-EOS-Native.
 - [x] **Configurable lobby code format** - Not limited to 4-digit codes, allow any string
 - [x] **Documentation updated** - All docs now clarify codes can be any string
 - [x] **EOS LobbyId codes** - `UseEosLobbyId = true` uses EOS-generated ID as join code (guaranteed unique)
-- [ ] **Name search via attributes** - Search lobbies by name attribute instead of just code
+- [x] **Name search via attributes** - `SearchLobbiesByNameAsync()`, `JoinLobbyByNameAsync()`
 - Note: EOS LobbyId is auto-detected on join - works seamlessly with custom codes
 
 ### Unified LobbyOptions API (Duck)

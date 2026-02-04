@@ -172,11 +172,28 @@ foreach (var lobby in lobbies)
 |--------|-------------|
 | `.WithGameMode(string)` | Filter by game mode |
 | `.WithRegion(string)` | Filter by region |
+| `.WithLobbyName(string)` | Filter by exact lobby name |
+| `.WithLobbyNameContaining(string)` | Filter by name substring |
 | `.WithMinPlayers(int)` | Minimum player count |
 | `.WithMaxPlayers(int)` | Maximum player count |
 | `.ExcludePassworded()` | Only show public lobbies |
 | `.ExcludeFull()` | Only show lobbies with space |
 | `.WithMaxResults(int)` | Limit result count |
+
+### Search by Name
+
+Search for lobbies by their name instead of join code:
+
+```csharp
+// Search by exact name
+var (result, lobbies) = await transport.SearchLobbiesByNameAsync("Pro Players Only", exactMatch: true);
+
+// Search by name containing substring
+var (result, lobbies) = await transport.SearchLobbiesByNameAsync("Pro", exactMatch: false);
+
+// Join a lobby by name
+var (result, lobby) = await transport.JoinLobbyByNameAsync("Pro Players Only");
+```
 
 ## Lobby Attributes
 

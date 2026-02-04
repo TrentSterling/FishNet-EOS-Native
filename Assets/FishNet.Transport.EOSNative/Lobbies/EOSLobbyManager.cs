@@ -755,6 +755,90 @@ namespace FishNet.Transport.EOSNative.Lobbies
         }
 
         /// <summary>
+        /// Searches for lobbies by name (exact match).
+        /// </summary>
+        /// <param name="lobbyName">The exact lobby name to search for.</param>
+        /// <param name="maxResults">Maximum number of results to return.</param>
+        /// <returns>Result and list of matching lobbies.</returns>
+        public async Task<(Result result, List<LobbyData> lobbies)> SearchByNameAsync(string lobbyName, uint maxResults = 10)
+        {
+            if (string.IsNullOrEmpty(lobbyName))
+            {
+                EOSDebugLogger.LogWarning(DebugCategory.LobbyManager, "EOSLobbyManager", "SearchByName: name is null or empty");
+                return (Result.InvalidParameters, null);
+            }
+
+            var options = new LobbySearchOptions()
+                .WithLobbyName(lobbyName)
+                .WithMaxResults(maxResults);
+
+            return await SearchLobbiesAsync(options);
+        }
+
+        /// <summary>
+        /// Searches for lobbies with names containing a substring.
+        /// </summary>
+        /// <param name="substring">The substring to search for in lobby names.</param>
+        /// <param name="maxResults">Maximum number of results to return.</param>
+        /// <returns>Result and list of matching lobbies.</returns>
+        public async Task<(Result result, List<LobbyData> lobbies)> SearchByNameContainingAsync(string substring, uint maxResults = 10)
+        {
+            if (string.IsNullOrEmpty(substring))
+            {
+                EOSDebugLogger.LogWarning(DebugCategory.LobbyManager, "EOSLobbyManager", "SearchByNameContaining: substring is null or empty");
+                return (Result.InvalidParameters, null);
+            }
+
+            var options = new LobbySearchOptions()
+                .WithLobbyNameContaining(substring)
+                .WithMaxResults(maxResults);
+
+            return await SearchLobbiesAsync(options);
+        }
+
+        /// <summary>
+        /// Finds a single lobby by exact name.
+        /// </summary>
+        /// <param name="lobbyName">The exact lobby name to find.</param>
+        /// <returns>Result and lobby data if found.</returns>
+        public async Task<(Result result, LobbyData? lobby)> FindLobbyByNameAsync(string lobbyName)
+        {
+            var (result, lobbies) = await SearchByNameAsync(lobbyName, 1);
+
+            if (result != Result.Success)
+            {
+                return (result, null);
+            }
+
+            if (lobbies == null || lobbies.Count == 0)
+            {
+                return (Result.NotFound, null);
+            }
+
+            return (Result.Success, lobbies[0]);
+        }
+
+        /// <summary>
+        /// Joins a lobby by its name.
+        /// If multiple lobbies have the same name, joins the first one found.
+        /// </summary>
+        /// <param name="lobbyName">The lobby name to search for and join.</param>
+        /// <returns>Result and lobby data.</returns>
+        public async Task<(Result result, LobbyData lobby)> JoinLobbyByNameAsync(string lobbyName)
+        {
+            var (findResult, lobbyData) = await FindLobbyByNameAsync(lobbyName);
+
+            if (findResult != Result.Success || !lobbyData.HasValue)
+            {
+                Debug.LogWarning($"[EOSLobbyManager] Lobby with name '{lobbyName}' not found");
+                return (findResult == Result.Success ? Result.NotFound : findResult, default);
+            }
+
+            EOSDebugLogger.Log(DebugCategory.LobbyManager, "EOSLobbyManager", $" JoinByName: Found lobby '{lobbyName}' ({lobbyData.Value.JoinCode})");
+            return await JoinLobbyByIdAsync(lobbyData.Value.LobbyId);
+        }
+
+        /// <summary>
         /// Quick match - finds and joins the first available lobby.
         /// Excludes password-protected and in-progress games.
         /// </summary>
