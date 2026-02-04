@@ -1088,6 +1088,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Ping & Callout System** - World position/object pings, multiple types, team visibility, visual indicators
 - **Backfill & Join-in-Progress** - Late joiner handling, game phases, backfill requests, team balancing, spawn protection
 - **Match Rematch System** - Post-match rematch voting, host force, swap teams, consecutive limits
+- **Enhanced Achievements** - Progress tracking, stat-based triggers, unlock popups, icon loading, offline caching
 
 ### Next Up
 
