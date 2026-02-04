@@ -78,7 +78,7 @@ Assets/FishNet.Transport.EOSNative/
 ├── Lobbies/ (3 files) - EOSLobbyManager, EOSLobbyChatManager, LobbyData
 ├── Voice/ (5 files) - EOSVoiceManager, EOSVoicePlayer, FishNetVoicePlayer, EOSVoiceZoneManager, EOSVoiceTriggerZone
 ├── Migration/ (5 files) - HostMigratable, HostMigrationManager, HostMigrationPlayerSpawner, HostMigrationTester, DoNotMigrate
-├── Social/ (12 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager, EOSTournamentManager
+├── Social/ (13 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager, EOSTournamentManager, EOSSeasonManager
 ├── Storage/ (2 files) - EOSPlayerDataStorage, EOSTitleStorage
 ├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
 ├── Replay/ (11 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings, EOSReplayVoiceRecorder, EOSReplayVoicePlayer
@@ -1080,6 +1080,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Voice Recording in Replays** - Capture and playback voice chat during replay recording/viewing
 - **Input-Based Matchmaking** - Match players by input device (KBM/Controller/Touch/VR) for fair competitive play
 - **Tournament Brackets** - Single/double elimination, round robin, seeding, best-of series, bracket visualization
+- **Seasons & Ranked Resets** - Competitive seasons with soft resets, reward tiers, season history, auto-transitions
 
 ### Next Up
 
