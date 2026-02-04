@@ -4186,6 +4186,8 @@ namespace FishNet.Transport.EOSNative
             DrawAfkSettingsSection();
             GUILayout.Space(4);
             DrawVoteKickSection();
+            GUILayout.Space(4);
+            DrawMapVoteSection();
 
             GUILayout.EndScrollView();
         }
@@ -4576,6 +4578,113 @@ namespace FishNet.Transport.EOSNative
                 {
                     GUILayout.Space(4);
                     GUILayout.Label($"AFK Players: {afkPlayers.Count}", _orangeStyle);
+                }
+            }
+
+            GUILayout.EndVertical();
+        }
+
+        private void DrawMapVoteSection()
+        {
+            var mapVoteManager = EOSMapVoteManager.Instance;
+            if (mapVoteManager == null) return;
+
+            GUILayout.Label("MAP/MODE VOTING", _sectionHeaderStyle);
+            GUILayout.BeginVertical(_boxStyle);
+
+            // Enable toggle
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Enabled:", _labelStyle, GUILayout.Width(80));
+            bool newEnabled = GUILayout.Toggle(mapVoteManager.Enabled, mapVoteManager.Enabled ? "ON" : "OFF", _smallButtonStyle, GUILayout.Width(50));
+            if (newEnabled != mapVoteManager.Enabled)
+                mapVoteManager.Enabled = newEnabled;
+            GUILayout.EndHorizontal();
+
+            if (mapVoteManager.Enabled)
+            {
+                // Active vote display
+                if (mapVoteManager.IsVoteActive && mapVoteManager.CurrentVote != null)
+                {
+                    var vote = mapVoteManager.CurrentVote;
+                    GUILayout.Space(4);
+                    GUILayout.Label($"{vote.Title}", _orangeStyle);
+                    GUILayout.Label($"Time: {mapVoteManager.TimeRemaining:0}s | Votes: {vote.TotalVotes}", _labelStyle);
+
+                    // Options with vote buttons
+                    var counts = mapVoteManager.GetVoteCounts();
+                    int myVote = mapVoteManager.GetMyVote();
+
+                    for (int i = 0; i < vote.Options.Count; i++)
+                    {
+                        var option = vote.Options[i];
+                        bool isMyVote = (i == myVote);
+
+                        GUILayout.BeginHorizontal();
+
+                        // Vote count (if showing live results)
+                        if (mapVoteManager.ShowLiveResults)
+                        {
+                            GUILayout.Label($"[{counts[i]}]", _valueStyle, GUILayout.Width(30));
+                        }
+
+                        // Option name
+                        GUIStyle optionStyle = isMyVote ? _greenStyle : _labelStyle;
+                        GUILayout.Label(option.DisplayName, optionStyle);
+
+                        // Vote button
+                        if (!isMyVote || mapVoteManager.AllowVoteChange)
+                        {
+                            string btnText = isMyVote ? "Voted" : "Vote";
+                            if (GUILayout.Button(btnText, _smallButtonStyle, GUILayout.Width(50)))
+                            {
+                                _ = mapVoteManager.CastVoteAsync(i);
+                            }
+                        }
+
+                        GUILayout.EndHorizontal();
+                    }
+
+                    // Host controls
+                    if (_networkManager != null && _networkManager.IsServerStarted)
+                    {
+                        GUILayout.Space(4);
+                        GUILayout.BeginHorizontal();
+                        if (GUILayout.Button("End Now", _smallButtonStyle, GUILayout.Width(70)))
+                        {
+                            mapVoteManager.EndVoteNow();
+                        }
+                        if (GUILayout.Button("+15s", _smallButtonStyle, GUILayout.Width(40)))
+                        {
+                            mapVoteManager.ExtendTimer(15f);
+                        }
+                        if (GUILayout.Button("Cancel", _smallButtonStyle, GUILayout.Width(60)))
+                        {
+                            _ = mapVoteManager.CancelVoteAsync();
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                }
+                else
+                {
+                    GUILayout.Label("No active vote", _labelStyle);
+
+                    // Quick start buttons (host only)
+                    if (_networkManager != null && _networkManager.IsServerStarted)
+                    {
+                        GUILayout.Space(4);
+                        GUILayout.Label("Quick Start:", _miniLabelStyle);
+
+                        GUILayout.BeginHorizontal();
+                        if (GUILayout.Button("Map Vote", _smallButtonStyle))
+                        {
+                            _ = mapVoteManager.StartMapVoteAsync("Vote for Next Map", "Map A", "Map B", "Map C");
+                        }
+                        if (GUILayout.Button("Mode Vote", _smallButtonStyle))
+                        {
+                            _ = mapVoteManager.StartModeVoteAsync("Vote for Game Mode", "Deathmatch", "Team DM", "CTF");
+                        }
+                        GUILayout.EndHorizontal();
+                    }
                 }
             }
 
