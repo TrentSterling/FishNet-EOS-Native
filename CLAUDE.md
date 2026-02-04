@@ -75,7 +75,7 @@ Assets/FishNet.Transport.EOSNative/
 │   └── EOSNetworkPlayer.cs
 │
 ├── Lobbies/ (3 files) - EOSLobbyManager, EOSLobbyChatManager, LobbyData
-├── Voice/ (3 files) - EOSVoiceManager, EOSVoicePlayer, FishNetVoicePlayer
+├── Voice/ (5 files) - EOSVoiceManager, EOSVoicePlayer, FishNetVoicePlayer, EOSVoiceZoneManager, EOSVoiceTriggerZone
 ├── Migration/ (5 files) - HostMigratable, HostMigrationManager, HostMigrationPlayerSpawner, HostMigrationTester, DoNotMigrate
 ├── Social/ (10 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData
 ├── Storage/ (2 files) - EOSPlayerDataStorage, EOSTitleStorage
@@ -325,6 +325,53 @@ EOSToastManager.ClearAll();
 ```
 
 Auto-integration via `EOSToastIntegration` shows toasts for lobby events, invites, and friend changes.
+
+### Voice Chat Zones
+
+Control who can hear who with proximity, team, or custom zone modes.
+
+```csharp
+var zoneManager = EOSVoiceZoneManager.Instance;
+
+// Set zone mode
+zoneManager.SetZoneMode(VoiceZoneMode.Global);     // Everyone hears everyone
+zoneManager.SetZoneMode(VoiceZoneMode.Proximity);  // Distance-based volume
+zoneManager.SetZoneMode(VoiceZoneMode.Team);       // Teammates only
+zoneManager.SetZoneMode(VoiceZoneMode.TeamProximity); // Team + distance
+zoneManager.SetZoneMode(VoiceZoneMode.Custom);     // Trigger-based rooms
+
+// Proximity settings
+zoneManager.MaxHearingDistance = 30f;  // Max range
+zoneManager.FadeStartDistance = 10f;   // Start fading
+zoneManager.ConfigureProximity(maxDistance: 30f, fadeStart: 10f);
+
+// Team settings
+zoneManager.SetTeam(1);  // Local player's team
+zoneManager.SetPlayerTeam(remotePuid, 2);  // Remote player's team
+zoneManager.ConfigureTeam(allowCrossTeam: true, crossTeamMultiplier: 0.25f);
+
+// Position tracking (auto-discovers FishNet NetworkObjects tagged "Player")
+zoneManager.RegisterLocalPlayer(localTransform);
+zoneManager.RegisterPlayer(remotePuid, remoteTransform);
+
+// Custom zones (use EOSVoiceTriggerZone component on trigger colliders)
+zoneManager.SetLocalZone("room1");
+zoneManager.SetPlayerZone(remotePuid, "room2");
+
+// Queries
+float volume = zoneManager.GetPlayerVolume(puid);
+bool canHear = zoneManager.IsPlayerInRange(puid);
+var hearable = zoneManager.GetPlayersInRange();
+float dist = zoneManager.GetDistanceToPlayer(puid);
+```
+
+**Events:**
+```csharp
+zoneManager.OnZoneModeChanged += (mode) => { };
+zoneManager.OnPlayerVolumeChanged += (puid, volume) => { };
+zoneManager.OnPlayerEnteredRange += (puid) => { };  // Proximity
+zoneManager.OnPlayerExitedRange += (puid) => { };   // Proximity
+```
 
 ### Party System
 
@@ -858,6 +905,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Anti-Cheat (EAC)** - Easy Anti-Cheat integration with session management, peer validation, violation detection
 - **Vote Kick** - Player voting to remove disruptive players, configurable thresholds, host veto, cooldowns
 - **Map/Mode Voting** - End-of-match voting for next map/mode, tie breakers, timer, live results
+- **Voice Chat Zones** - Proximity, team, and custom zone-based voice chat with trigger zones
 
 ### Next Up
 
