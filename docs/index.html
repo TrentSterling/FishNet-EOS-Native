@@ -11,8 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/dark.css">
   <style>
-    :root {
-      /* Tront color palette */
+    :root, [data-theme="dark"] {
+      /* Dark theme (default) - Orange accent */
       --bg-primary: #0d1117;
       --bg-secondary: #161b22;
       --bg-tertiary: #21262d;
@@ -37,6 +37,291 @@
       /* Docsify overrides */
       --theme-color: #FF5733;
       --sidebar-width: 280px;
+    }
+
+    /* White/Light theme */
+    [data-theme="white"] {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f6f8fa;
+      --bg-tertiary: #eaeef2;
+      --bg-code: #f6f8fa;
+
+      --text-primary: #1f2328;
+      --text-secondary: #59636e;
+      --text-muted: #8b949e;
+
+      --accent: #d93526;
+      --accent-light: #e85d4f;
+      --accent-glow: rgba(217, 53, 38, 0.2);
+      --accent-gold: #9a6700;
+      --accent-gold-bg: rgba(154, 103, 0, 0.1);
+
+      --link: #0969da;
+      --link-hover: #0550ae;
+
+      --border: #d1d9e0;
+      --border-light: #e1e4e8;
+
+      --theme-color: #d93526;
+    }
+
+    /* Black/OLED theme */
+    [data-theme="black"] {
+      --bg-primary: #000000;
+      --bg-secondary: #0a0a0a;
+      --bg-tertiary: #141414;
+      --bg-code: #0a0a0a;
+
+      --text-primary: #ffffff;
+      --text-secondary: #a0a0a0;
+      --text-muted: #666666;
+
+      --accent: #FF5733;
+      --accent-light: #ff7b5a;
+      --accent-glow: rgba(255, 87, 51, 0.4);
+      --accent-gold: #FFD700;
+      --accent-gold-bg: rgba(255, 215, 0, 0.15);
+
+      --link: #6db3f2;
+      --link-hover: #8ec5f5;
+
+      --border: #222222;
+      --border-light: #333333;
+
+      --theme-color: #FF5733;
+    }
+
+    /* Purple theme */
+    [data-theme="purple"] {
+      --bg-primary: #1a1025;
+      --bg-secondary: #241530;
+      --bg-tertiary: #2e1d3d;
+      --bg-code: #1f1329;
+
+      --text-primary: #f0e6ff;
+      --text-secondary: #b8a5d6;
+      --text-muted: #8b7aa8;
+
+      --accent: #a855f7;
+      --accent-light: #c084fc;
+      --accent-glow: rgba(168, 85, 247, 0.35);
+      --accent-gold: #fbbf24;
+      --accent-gold-bg: rgba(251, 191, 36, 0.15);
+
+      --link: #c084fc;
+      --link-hover: #d8b4fe;
+
+      --border: #3d2a52;
+      --border-light: #4c3666;
+
+      --theme-color: #a855f7;
+    }
+
+    /* Neon/Cyberpunk theme */
+    [data-theme="neon"] {
+      --bg-primary: #0a0a12;
+      --bg-secondary: #12121f;
+      --bg-tertiary: #1a1a2e;
+      --bg-code: #0f0f1a;
+
+      --text-primary: #e0f7ff;
+      --text-secondary: #7fdbff;
+      --text-muted: #4a90a4;
+
+      --accent: #00ff88;
+      --accent-light: #33ffaa;
+      --accent-glow: rgba(0, 255, 136, 0.4);
+      --accent-gold: #ffff00;
+      --accent-gold-bg: rgba(255, 255, 0, 0.15);
+
+      --link: #ff00ff;
+      --link-hover: #ff66ff;
+
+      --border: #00ff8844;
+      --border-light: #00ff8866;
+
+      --theme-color: #00ff88;
+    }
+
+    /* Blue theme */
+    [data-theme="blue"] {
+      --bg-primary: #0c1929;
+      --bg-secondary: #112240;
+      --bg-tertiary: #1a365d;
+      --bg-code: #0f1e36;
+
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+
+      --accent: #3b82f6;
+      --accent-light: #60a5fa;
+      --accent-glow: rgba(59, 130, 246, 0.35);
+      --accent-gold: #fbbf24;
+      --accent-gold-bg: rgba(251, 191, 36, 0.15);
+
+      --link: #38bdf8;
+      --link-hover: #7dd3fc;
+
+      --border: #2d4a6f;
+      --border-light: #3d5a7f;
+
+      --theme-color: #3b82f6;
+    }
+
+    /* Pink theme */
+    [data-theme="pink"] {
+      --bg-primary: #1f1318;
+      --bg-secondary: #2d1b23;
+      --bg-tertiary: #3d252f;
+      --bg-code: #261720;
+
+      --text-primary: #fce7f3;
+      --text-secondary: #f9a8d4;
+      --text-muted: #c084a4;
+
+      --accent: #ec4899;
+      --accent-light: #f472b6;
+      --accent-glow: rgba(236, 72, 153, 0.35);
+      --accent-gold: #fcd34d;
+      --accent-gold-bg: rgba(252, 211, 77, 0.15);
+
+      --link: #f472b6;
+      --link-hover: #fbcfe8;
+
+      --border: #5c3a4a;
+      --border-light: #6d4a5a;
+
+      --theme-color: #ec4899;
+    }
+
+    /* Pastel theme */
+    [data-theme="pastel"] {
+      --bg-primary: #fef7f0;
+      --bg-secondary: #fff5eb;
+      --bg-tertiary: #ffeedd;
+      --bg-code: #fff8f2;
+
+      --text-primary: #4a4a4a;
+      --text-secondary: #6b6b6b;
+      --text-muted: #9a9a9a;
+
+      --accent: #e07a5f;
+      --accent-light: #e8a090;
+      --accent-glow: rgba(224, 122, 95, 0.25);
+      --accent-gold: #d4a574;
+      --accent-gold-bg: rgba(212, 165, 116, 0.2);
+
+      --link: #81b29a;
+      --link-hover: #6a9c84;
+
+      --border: #e5d5c5;
+      --border-light: #f0e5d8;
+
+      --theme-color: #e07a5f;
+    }
+
+    /* High Contrast theme (accessibility) */
+    [data-theme="contrast"] {
+      --bg-primary: #000000;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #2a2a2a;
+      --bg-code: #1a1a1a;
+
+      --text-primary: #ffffff;
+      --text-secondary: #ffffff;
+      --text-muted: #cccccc;
+
+      --accent: #ffff00;
+      --accent-light: #ffff66;
+      --accent-glow: rgba(255, 255, 0, 0.5);
+      --accent-gold: #00ffff;
+      --accent-gold-bg: rgba(0, 255, 255, 0.2);
+
+      --link: #00ffff;
+      --link-hover: #66ffff;
+
+      --border: #ffffff;
+      --border-light: #cccccc;
+
+      --theme-color: #ffff00;
+    }
+
+    /* Theme switcher styles */
+    .theme-switcher {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 999;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      max-width: 200px;
+      justify-content: flex-end;
+    }
+
+    .theme-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .theme-btn:hover {
+      transform: scale(1.15);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .theme-btn.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+
+    .theme-btn[data-theme="dark"] { background: linear-gradient(135deg, #0d1117 50%, #FF5733 50%); }
+    .theme-btn[data-theme="white"] { background: linear-gradient(135deg, #ffffff 50%, #d93526 50%); }
+    .theme-btn[data-theme="black"] { background: linear-gradient(135deg, #000000 50%, #FF5733 50%); }
+    .theme-btn[data-theme="purple"] { background: linear-gradient(135deg, #1a1025 50%, #a855f7 50%); }
+    .theme-btn[data-theme="neon"] { background: linear-gradient(135deg, #0a0a12 50%, #00ff88 50%); }
+    .theme-btn[data-theme="blue"] { background: linear-gradient(135deg, #0c1929 50%, #3b82f6 50%); }
+    .theme-btn[data-theme="pink"] { background: linear-gradient(135deg, #1f1318 50%, #ec4899 50%); }
+    .theme-btn[data-theme="pastel"] { background: linear-gradient(135deg, #fef7f0 50%, #e07a5f 50%); }
+    .theme-btn[data-theme="contrast"] { background: linear-gradient(135deg, #000000 50%, #ffff00 50%); }
+
+    .theme-btn::after {
+      content: attr(title);
+      position: absolute;
+      bottom: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .theme-btn:hover::after {
+      opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+      .theme-switcher {
+        top: auto;
+        bottom: 50px;
+        right: 10px;
+        max-width: 150px;
+      }
+      .theme-btn {
+        width: 24px;
+        height: 24px;
+      }
     }
 
     * {
@@ -650,6 +935,48 @@
 </head>
 <body>
   <div id="app"></div>
+
+  <!-- Theme Switcher -->
+  <div class="theme-switcher">
+    <button class="theme-btn" data-theme="dark" title="Dark"></button>
+    <button class="theme-btn" data-theme="white" title="White"></button>
+    <button class="theme-btn" data-theme="black" title="OLED"></button>
+    <button class="theme-btn" data-theme="purple" title="Purple"></button>
+    <button class="theme-btn" data-theme="neon" title="Neon"></button>
+    <button class="theme-btn" data-theme="blue" title="Blue"></button>
+    <button class="theme-btn" data-theme="pink" title="Pink"></button>
+    <button class="theme-btn" data-theme="pastel" title="Pastel"></button>
+    <button class="theme-btn" data-theme="contrast" title="Hi-Con"></button>
+  </div>
+
+  <script>
+    // Theme switcher
+    (function() {
+      const savedTheme = localStorage.getItem('docs-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+
+      document.addEventListener('DOMContentLoaded', function() {
+        const buttons = document.querySelectorAll('.theme-btn');
+
+        // Mark active theme
+        buttons.forEach(btn => {
+          if (btn.dataset.theme === savedTheme) {
+            btn.classList.add('active');
+          }
+
+          btn.addEventListener('click', function() {
+            const theme = this.dataset.theme;
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('docs-theme', theme);
+
+            buttons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+          });
+        });
+      });
+    })();
+  </script>
+
   <script>
     window.$docsify = {
       name: 'FishNet EOS Native',
