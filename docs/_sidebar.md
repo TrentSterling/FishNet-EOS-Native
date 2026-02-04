@@ -19,6 +19,7 @@
   * [Party System](party.md)
   * [Teams & Clans](clans.md)
   * [LFG (Looking for Group)](lfg.md)
+  * [Reputation & Karma](reputation.md)
   * [Invites & Presence](invites.md)
   * [Platform Detection](platforms.md)
 
