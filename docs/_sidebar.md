@@ -1,7 +1,7 @@
 * **Getting Started**
   * [Overview](/)
   * [Quick Start](quickstart.md)
-  * [Setup Wizard](setup.md)
+  * [Setup Guide](setup.md)
 
 * **Core Features**
   * [Lobbies](lobbies.md)
