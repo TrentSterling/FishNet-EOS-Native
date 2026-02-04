@@ -36,6 +36,30 @@ Current development tasks for FishNet-EOS-Native.
 
 ---
 
+## Quick Wins (v1.0.x)
+
+### UX Polish
+- [ ] **Copy Lobby Code to Clipboard** - One-click share button in UI
+- [ ] **Player Color System** - Auto-assign colors on join, display in UI/nameplates
+- [ ] **AFK Detection** - Track idle time, auto-kick option for hosts
+
+### Social Enhancements
+- [ ] **"Last Seen" for Friends** - Timestamp when friend was last online
+- [ ] **Player Tags/Titles** - Host can assign labels ("VIP", "Noob", custom text)
+- [ ] **"Time Played Together"** - Track cumulative play time with each friend
+
+### Debug/Dev Tools
+- [ ] **Fake Players for Testing** - Spawn bots that move randomly (ParrelSync alternative)
+- [ ] **Screenshot Lobby State** - Copy lobby info to clipboard for bug reports
+- [ ] **Auto-Reconnect** - Automatically attempt reconnect on disconnect
+
+### Demo/Fun
+- [ ] **Confetti on Join** - Particle effect when player joins lobby (demo showcase)
+- [ ] **Chat Emotes/Reactions** - React to messages with 👍👎😂 etc.
+- [ ] **"First to Join" Badge** - Special indicator for first player after host
+
+---
+
 ## Completed (v1.0.0) - 2026-02-02
 
 ### Replay System
