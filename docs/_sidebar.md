@@ -34,6 +34,7 @@
 * **Replay System**
   * [Recording & Playback](replays.md)
   * [Spectator Mode](spectator.md)
+  * [Highlights](highlights.md)
 
 * **Advanced**
   * [Anti-Cheat (EAC)](anticheat.md)
