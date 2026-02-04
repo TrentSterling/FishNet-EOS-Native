@@ -630,6 +630,59 @@ namespace FishNet.Transport.EOSNative
         }
 
         /// <summary>
+        /// CLIENT MODE: Joins a lobby by its name (searches by LOBBY_NAME attribute).
+        /// If multiple lobbies have the same name, joins the first one found.
+        /// </summary>
+        /// <param name="lobbyName">The lobby name to search for and join.</param>
+        /// <param name="autoConnect">If true (default), automatically connects to the host.</param>
+        /// <returns>Result and lobby data.</returns>
+        public async Task<(Result result, LobbyData lobby)> JoinLobbyByNameAsync(string lobbyName, bool autoConnect = true)
+        {
+            if (string.IsNullOrEmpty(lobbyName))
+            {
+                EOSDebugLogger.LogError("EOSNativeTransport", "Lobby name is required.");
+                return (Result.InvalidParameters, default);
+            }
+
+            var (result, lobby) = await LobbyManager.JoinLobbyByNameAsync(lobbyName);
+
+            if (result == Result.Success && autoConnect)
+            {
+                if (!string.IsNullOrEmpty(lobby.OwnerPuid))
+                {
+                    RemoteProductUserId = lobby.OwnerPuid;
+                    StartClientOnly();
+                    EOSDebugLogger.Log(DebugCategory.Transport, "EOSNativeTransport", $" Joined lobby by name: {lobbyName} ({lobby.JoinCode})");
+                }
+                else
+                {
+                    EOSDebugLogger.LogWarning(DebugCategory.Transport, "EOSNativeTransport", "Joined lobby but no host found!");
+                }
+            }
+
+            return (result, lobby);
+        }
+
+        /// <summary>
+        /// Searches for lobbies by name (exact match or containing substring).
+        /// </summary>
+        /// <param name="searchTerm">The name or substring to search for.</param>
+        /// <param name="exactMatch">If true, searches for exact name match. If false, searches for names containing the term.</param>
+        /// <param name="maxResults">Maximum number of results to return.</param>
+        /// <returns>Result and list of matching lobbies.</returns>
+        public async Task<(Result result, List<LobbyData> lobbies)> SearchLobbiesByNameAsync(string searchTerm, bool exactMatch = false, uint maxResults = 10)
+        {
+            if (exactMatch)
+            {
+                return await LobbyManager.SearchByNameAsync(searchTerm, maxResults);
+            }
+            else
+            {
+                return await LobbyManager.SearchByNameContainingAsync(searchTerm, maxResults);
+            }
+        }
+
+        /// <summary>
         /// Leaves the current lobby and stops all connections.
         /// </summary>
         public async Task LeaveLobbyAsync()
