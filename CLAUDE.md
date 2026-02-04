@@ -1089,6 +1089,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Backfill & Join-in-Progress** - Late joiner handling, game phases, backfill requests, team balancing, spawn protection
 - **Match Rematch System** - Post-match rematch voting, host force, swap teams, consecutive limits
 - **Enhanced Achievements** - Progress tracking, stat-based triggers, unlock popups, icon loading, offline caching
+- **Enhanced Reconnection** - Session preservation, slot reservation, exponential backoff, late rejoin modes
 
 ### Next Up
 
