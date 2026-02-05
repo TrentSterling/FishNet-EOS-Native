@@ -83,6 +83,7 @@ Assets/FishNet.Transport.EOSNative/
 ├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
 ├── Replay/ (12 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings, EOSReplayVoiceRecorder, EOSReplayVoicePlayer, EOSReplayHighlights
 ├── AntiCheat/ (1 file) - EOSAntiCheatManager
+├── Security/ (2 files) - SecurityValidator, HostAuthorityValidator
 ├── EOSVoteKickManager.cs         # Player vote kick system
 ├── EOSMapVoteManager.cs          # Map/mode voting system
 ├── EOSSpectatorMode.cs           # Spectator camera system
@@ -1009,6 +1010,55 @@ mapVote.OnVoteEnded += (voteData, winningOption, winningIndex) => { };
 mapVote.OnTieNeedsDecision += (tiedOptions) => { };  // For HostChoice mode
 ```
 
+### Security & Host Authority
+
+Host-authority validation for critical systems. See `SECURITY.md` for full details.
+
+**Trust Model:**
+| What | Trust Level |
+|------|-------------|
+| Transport (P2P) | Host-Authoritative |
+| Lobby Attributes | Client-Writable |
+| Cloud Storage | Client-Writable |
+| Votes | Host-Validated |
+
+**Secure Methods (use instead of direct calls):**
+```csharp
+// Ranked - host validates match outcome
+EOSRankedMatchmaking.Instance.RecordMatchResultSecure(MatchOutcome.Win, opponentRating);
+
+// Achievements - host validates unlock criteria
+EOSAchievements.Instance.UnlockAchievementSecure("first_blood");
+
+// Reputation - host validates feedback source
+EOSReputationManager.Instance.CommendPlayerSecure(targetPuid, "Teamwork");
+EOSReputationManager.Instance.ReportPlayerSecure(targetPuid, "Toxicity");
+```
+
+**Setup:**
+```csharp
+// Add to NetworkManager GameObject
+gameObject.AddComponent<HostAuthorityValidator>();
+```
+
+**Rate Limits (built-in):**
+| Action | Limit |
+|--------|-------|
+| Match results | 5/min |
+| Achievement unlocks | 10/min |
+| Reputation changes | 20/min |
+| Votes | 10-20/min |
+
+**Vote System Hardening:**
+- Votes verified against lobby membership
+- Rate limiting prevents spam
+- Host does final vote counting
+
+**Limitations:**
+- Cloud storage remains client-writable
+- A cheating host can bypass validation
+- For production competitive games, use a dedicated backend
+
 ## Coding Standards
 
 - **Namespace:** `FishNet.Transport.EOSNative`
@@ -1095,6 +1145,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Enhanced Achievements** - Progress tracking, stat-based triggers, unlock popups, icon loading, offline caching
 - **Enhanced Reconnection** - Session preservation, slot reservation, exponential backoff, late rejoin modes
 - **Unit Test Framework** - Edit Mode and Play Mode tests, assembly definitions, test coverage for core systems
+- **Security Hardening** - Host-authority validation, rate limiting, secure methods for ranked/achievements/reputation
 
 ### Next Up
 
