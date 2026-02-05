@@ -78,7 +78,7 @@ Assets/FishNet.Transport.EOSNative/
 ├── Lobbies/ (5 files) - EOSLobbyManager, EOSLobbyChatManager, LobbyData, EOSBackfillManager, EOSRematchManager
 ├── Voice/ (5 files) - EOSVoiceManager, EOSVoicePlayer, FishNetVoicePlayer, EOSVoiceZoneManager, EOSVoiceTriggerZone
 ├── Migration/ (5 files) - HostMigratable, HostMigrationManager, HostMigrationPlayerSpawner, HostMigrationTester, DoNotMigrate
-├── Social/ (17 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager, EOSTournamentManager, EOSSeasonManager, EOSClanManager, EOSGlobalChatManager, EOSReputationManager, EOSPingManager
+├── Social/ (18 files) - Friends, Presence, UserInfo, CustomInvites, Stats, Leaderboards, EOSMatchHistory, EOSRankedMatchmaking, RankedData, EOSLFGManager, EOSTournamentManager, EOSSeasonManager, EOSClanManager, EOSGlobalChatManager, EOSReputationManager, EOSPingManager, EOSDiscordPresence
 ├── Storage/ (2 files) - EOSPlayerDataStorage, EOSTitleStorage
 ├── Party/ (1 file) - EOSPartyManager    # Persistent party groups
 ├── Replay/ (12 files) - EOSReplayRecorder, EOSReplayPlayer, EOSReplayStorage, EOSReplayViewer, ReplayDataTypes, ReplayRecordable, ReplayGhost, ReplayMigration, EOSReplaySettings, EOSReplayVoiceRecorder, EOSReplayVoicePlayer, EOSReplayHighlights
@@ -375,6 +375,72 @@ EOSToastManager.ClearAll();
 ```
 
 Auto-integration via `EOSToastIntegration` shows toasts for lobby events, invites, and friend changes.
+
+### Discord Rich Presence
+
+Show lobby status in Discord - zero external dependencies, uses raw named pipes.
+
+```csharp
+var discord = EOSDiscordPresence.Instance;
+
+// Manual presence updates
+discord.SetPresence("In Menu");
+discord.SetPresence("Playing Deathmatch", "Map: Dust2");
+
+// Lobby presence (shows party size)
+discord.SetLobbyPresence(
+    details: "In Lobby",
+    lobbyCode: "ABC123",
+    currentPlayers: 4,
+    maxPlayers: 8
+);
+
+// Full control
+discord.UpdatePresence(
+    details: "Ranked Match",
+    state: "Round 5 of 10",
+    partyId: "lobby123",
+    partySize: 4,
+    partyMax: 8,
+    startTimestamp: DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+    largeImageKey: "game_logo",
+    largeImageText: "FishNet EOS Native",
+    smallImageKey: "status_playing",
+    smallImageText: "In Game"
+);
+
+// Clear presence
+discord.ClearPresence();
+
+// Connection
+discord.Connect();      // Auto-connects on Start if ApplicationId set
+discord.Disconnect();
+```
+
+**Configuration (Inspector):**
+- `ApplicationId` - Your Discord Application ID from [discord.com/developers](https://discord.com/developers/applications)
+- `LargeImageKey` / `SmallImageKey` - Image keys from Discord Developer Portal
+- `AutoUpdate` - Automatically update presence based on lobby state
+- `UpdateInterval` - How often to refresh (default: 15s)
+
+**Auto-Integration:**
+When `AutoUpdate` is enabled, presence automatically updates when:
+- Joining a lobby (shows lobby code, player count)
+- Leaving a lobby (shows "In Menu")
+- Players join/leave (updates party size)
+
+**Events:**
+```csharp
+discord.OnConnected += () => { };
+discord.OnDisconnected += () => { };
+discord.OnError += (message) => { };
+```
+
+**Setup:**
+1. Create app at [discord.com/developers](https://discord.com/developers/applications)
+2. Copy Application ID
+3. Add images in Rich Presence > Art Assets
+4. Set `ApplicationId` on EOSDiscordPresence component
 
 ### Voice Chat Zones
 
@@ -1146,6 +1212,7 @@ PUIDs from DeviceID auth have no visible display names. We use deterministic "An
 - **Enhanced Reconnection** - Session preservation, slot reservation, exponential backoff, late rejoin modes
 - **Unit Test Framework** - Edit Mode and Play Mode tests, assembly definitions, test coverage for core systems
 - **Security Hardening** - Host-authority validation, rate limiting, secure methods for ranked/achievements/reputation
+- **Discord Rich Presence** - Zero-dependency integration using raw named pipes, auto-updates from lobby state
 
 ### Next Up
 
