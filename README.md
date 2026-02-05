@@ -187,6 +187,12 @@ var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
 - [INSPIRATION.md](INSPIRATION.md) - Credits, lineage, and lessons learned
 - [ARCHIVE.md](ARCHIVE.md) - Historical docs and code examples
 
+## Links
+
+- **Blog Post:** [FishNet-EOS-Native v1.0 Released!](https://blog.tront.xyz/posts/fishnet-eos-native-released/)
+- **Release:** [v1.0.0 on GitHub](https://github.com/TrentSterling/FishNet-EOS-Native/releases/tag/v1.0.0)
+- **Author:** [tront.xyz](https://tront.xyz)
+
 ## Current Version: 1.0.0
 
 See [CHANGELOG.md](CHANGELOG.md) for details.
