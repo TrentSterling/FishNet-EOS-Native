@@ -15,6 +15,7 @@
 - **Ranked Matchmaking** - ELO/Glicko-2 skill-based matchmaking with tiers
 - **Replay System** - Record and playback games with timeline controls
 - **Anti-Cheat** - Easy Anti-Cheat (EAC) integration
+- **Security Hardening** - Host-authority validation, rate limiting, secure methods
 - **Cross-Platform** - Windows, Mac, Linux, Android, iOS, Quest
 
 ## Requirements
@@ -58,7 +59,7 @@ await transport.LeaveLobbyAsync();
 | **Social** | Friends, Parties, Invites, Platforms |
 | **Competitive** | Ranked Matchmaking, Match History, Leaderboards |
 | **Replay System** | Recording, Playback, Spectator Mode |
-| **Advanced** | Anti-Cheat, Cloud Storage, Architecture |
+| **Advanced** | Security, Anti-Cheat, Cloud Storage, Architecture |
 
 ## Support
 
