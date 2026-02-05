@@ -16,6 +16,7 @@
 - **Replay System** - Record and playback games with timeline controls
 - **Anti-Cheat** - Easy Anti-Cheat (EAC) integration
 - **Security Hardening** - Host-authority validation, rate limiting, secure methods
+- **Discord Rich Presence** - Zero-dependency integration, auto-syncs with lobby state
 - **Cross-Platform** - Windows, Mac, Linux, Android, iOS, Quest
 
 ## Requirements
@@ -56,7 +57,7 @@ await transport.LeaveLobbyAsync();
 | Section | Description |
 |---------|-------------|
 | **Core Features** | Lobbies, Voice, Chat, Host Migration |
-| **Social** | Friends, Parties, Invites, Platforms |
+| **Social** | Friends, Parties, Invites, Platforms, Discord |
 | **Competitive** | Ranked Matchmaking, Match History, Leaderboards |
 | **Replay System** | Recording, Playback, Spectator Mode |
 | **Advanced** | Security, Anti-Cheat, Cloud Storage, Architecture |

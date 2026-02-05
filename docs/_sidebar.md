@@ -24,6 +24,7 @@
   * [Reputation & Karma](reputation.md)
   * [Invites & Presence](invites.md)
   * [Platform Detection](platforms.md)
+  * [Discord Rich Presence](discord.md)
 
 * **Competitive**
   * [Ranked Matchmaking](ranked.md)
