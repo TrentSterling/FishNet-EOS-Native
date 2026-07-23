@@ -51,7 +51,7 @@ Standalone Transport for FishNet using Epic Online Services (EOS) directly via r
 
 1. Open Package Manager (Window > Package Manager)
 2. Click + > Add package from git URL
-3. Enter: `https://github.com/TrentSterling/FishNet-EOS-Native.git?path=Assets/FishNet.Transport.EOSNative`
+3. Enter: `https://github.com/TrentSterling/fishnet-eos-native.git?path=Assets/FishNet.Transport.EOSNative`
 
 ## Quick Start
 
@@ -74,7 +74,7 @@ var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync();
 
 ## Documentation
 
-See the [GitHub repository](https://github.com/TrentSterling/FishNet-EOS-Native) for full documentation.
+See the [GitHub repository](https://github.com/TrentSterling/fishnet-eos-native) for full documentation.
 
 ## License
 

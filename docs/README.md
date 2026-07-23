@@ -65,5 +65,5 @@ await transport.LeaveLobbyAsync();
 ## Support
 
 - [Troubleshooting](troubleshooting.md)
-- [GitHub Issues](https://github.com/TrentSterling/FishNet-EOS-Native/issues)
+- [GitHub Issues](https://github.com/TrentSterling/fishnet-eos-native/issues)
 - [EOS Developer Portal](https://dev.epicgames.com/portal)

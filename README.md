@@ -92,7 +92,7 @@ Existing EOS transports for FishNet depend on the [PlayEveryWare EOS Plugin](htt
 2. Click **+** > **Add package from git URL**
 3. Enter:
    ```
-   https://github.com/TrentSterling/FishNet-EOS-Native.git?path=Assets/FishNet.Transport.EOSNative
+   https://github.com/TrentSterling/fishnet-eos-native.git?path=Assets/FishNet.Transport.EOSNative
    ```
 
 **Option B: Manual**
@@ -177,7 +177,7 @@ var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
 
 ## Documentation
 
-**[📖 Full Documentation](https://tront.xyz/FishNet-EOS-Native/)** - Searchable docs with examples
+**[📖 Full Documentation](https://tront.xyz/fishnet-eos-native/)** - Searchable docs with examples
 
 - [CLAUDE.md](CLAUDE.md) - Architecture reference and API guide
 - [CLASSES.md](CLASSES.md) - Class architecture and detailed API
@@ -190,7 +190,7 @@ var (result, lobby, didHost) = await transport.QuickMatchOrHostAsync(
 ## Links
 
 - **Blog Post:** [FishNet-EOS-Native v1.0 Released!](https://blog.tront.xyz/posts/fishnet-eos-native-released/)
-- **Release:** [v1.0.0 on GitHub](https://github.com/TrentSterling/FishNet-EOS-Native/releases/tag/v1.0.0)
+- **Release:** [v1.0.0 on GitHub](https://github.com/TrentSterling/fishnet-eos-native/releases/tag/v1.0.0)
 - **Author:** [tront.xyz](https://tront.xyz)
 
 ## Current Version: 1.0.0

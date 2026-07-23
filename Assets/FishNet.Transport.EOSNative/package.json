@@ -5,9 +5,9 @@
   "description": "Standalone Transport for FishNet using Epic Online Services (EOS) directly via raw C# SDK. No PlayEveryWare dependency. Features: P2P networking, flexible lobby codes, voice chat, text chat, host migration, friends, presence, stats, leaderboards, achievements, cloud storage, and more.",
   "unity": "6000.0",
   "unityRelease": "0f1",
-  "documentationUrl": "https://github.com/TrentSterling/FishNet-EOS-Native#readme",
-  "changelogUrl": "https://github.com/TrentSterling/FishNet-EOS-Native/blob/main/CHANGELOG.md",
-  "licensesUrl": "https://github.com/TrentSterling/FishNet-EOS-Native/blob/main/LICENSE",
+  "documentationUrl": "https://github.com/TrentSterling/fishnet-eos-native#readme",
+  "changelogUrl": "https://github.com/TrentSterling/fishnet-eos-native/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/TrentSterling/fishnet-eos-native/blob/main/LICENSE",
   "dependencies": {
     "com.unity.inputsystem": "1.7.0"
   },

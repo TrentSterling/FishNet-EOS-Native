@@ -62,7 +62,7 @@ After setup, you should see:
 
 1. Open Package Manager (`Window > Package Manager`)
 2. Click `+` > `Add package from git URL`
-3. Enter: `https://github.com/TrentSterling/FishNet-EOS-Native.git`
+3. Enter: `https://github.com/TrentSterling/fishnet-eos-native.git`
 
 ### Via Local Package
 

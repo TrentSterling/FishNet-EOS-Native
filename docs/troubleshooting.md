@@ -232,5 +232,5 @@ Common issues and solutions.
 1. Check F1/F3/F4 debug panels for status
 2. Enable relevant debug categories
 3. Check Console for error messages
-4. Review [GitHub Issues](https://github.com/TrentSterling/FishNet-EOS-Native/issues)
+4. Review [GitHub Issues](https://github.com/TrentSterling/fishnet-eos-native/issues)
 5. Consult [EOS Documentation](https://dev.epicgames.com/docs)
